@@ -1,6 +1,6 @@
 import React from 'react';
 import { StackNavigator, TabNavigator } from 'react-navigation';
-import { Counter, Welcome } from './screens';
+import { Counter, Welcome, Auth } from './screens';
 import { ralph } from './styles';
 
 const stackConfig = {
@@ -26,11 +26,15 @@ const CounterNavigator = StackNavigator({
   Counter: {screen: Counter},
 }, stackConfig);
 
+const AuthNavigator = StackNavigator({
+  Auth: {screen: Auth},
+}, stackConfig);
+
 const AppNavigator = TabNavigator({
   Welcome: {screen: WelcomeNavigator},
   Counter: {screen: CounterNavigator},
 }, tabConfig);
 
 export {
-  AppNavigator,
+  AppNavigator, AuthNavigator,
 };
