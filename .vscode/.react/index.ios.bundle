@@ -52746,7 +52746,7 @@ var App = function App() {
   return _react2.default.createElement(
     _reactNative.View,
     { style: _styles2.default.app },
-    _react2.default.createElement(_reactNative.StatusBar, { barStyle: 'light-content' }),
+    _react2.default.createElement(_reactNative.StatusBar, { barStyle: 'dark-content' }),
     _react2.default.createElement(_routes.PhotoMapNavigator, null)
   );
 };
@@ -52777,6 +52777,12 @@ var stackConfig = {
   }
 };
 
+var emptyHeader = {
+  navigationOptions: {
+    header: null
+  }
+};
+
 var tabConfig = {
   tabBarOptions: {
     activeTintColor: _styles.ralph.primaryColor
@@ -52802,7 +52808,7 @@ var AppNavigator = (0, _reactNavigation.TabNavigator)({
 
 var PhotoMapNavigator = (0, _reactNavigation.StackNavigator)({
   PhotoMap: { screen: _screens.PhotoMap }
-}, stackConfig);
+}, emptyHeader);
 
 exports.AppNavigator = AppNavigator;
 exports.AuthNavigator = AuthNavigator;
@@ -59637,12 +59643,6 @@ var _picker2 = babelHelpers.interopRequireDefault(_picker);
 
 var _components = require(459            ); // 459 = ../components
 
-_reactNativeImagePicker2.default.showImagePicker({
-  storageOptions: { skipBackup: true, path: 'image' }
-}, function (response) {
-  console.log(response);
-});
-
 var region = {
   latitude: 10.8231,
   longitude: 106.6297,
@@ -59744,9 +59744,6 @@ var PhotoMap = function (_Component) {
   return PhotoMap;
 }(_react.Component);
 
-PhotoMap.navigationOptions = {
-  title: 'PhotoMap'
-};
 exports.default = PhotoMap;
 }, 528, null, "twrnc/app/screens/photomap.js");
 __d(/* react-native-maps/index.js */function(global, require, module, exports) {var _MapView = require(530                       ); // 530 = ./lib/components/MapView

@@ -5,7 +5,7 @@ import styles from '../styles';
 
 const App = () => (
   <View style={styles.app}>
-    <StatusBar barStyle="light-content" />
+    <StatusBar barStyle="dark-content" />
     <PhotoMapNavigator />
   </View>
 );

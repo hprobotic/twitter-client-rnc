@@ -1,5 +1,5 @@
 import React from 'react';
-import { StackNavigator, TabNavigator } from 'react-navigation';
+import { StackNavigator, TabNavigator, View } from 'react-navigation';
 import { Counter, Welcome, Auth, PhotoMap } from './screens';
 import { ralph } from './styles';
 
@@ -9,6 +9,12 @@ const stackConfig = {
       backgroundColor: ralph.primaryColor,
     },
     headerTintColor: ralph.backgroundColor,
+  },
+};
+
+const emptyHeader = {
+  navigationOptions: {
+    header: null,
   },
 };
 
@@ -37,7 +43,7 @@ const AppNavigator = TabNavigator({
 
 const PhotoMapNavigator = StackNavigator({
   PhotoMap: {screen: PhotoMap},
-}, stackConfig);
+}, emptyHeader);
 
 export {
   AppNavigator, AuthNavigator, PhotoMapNavigator,

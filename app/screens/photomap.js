@@ -7,12 +7,6 @@ import styles from '../styles';
 import picker from '../resources/images/picker.png';
 import { LocationSearchHeader } from '../components';
 
-ImagePicker.showImagePicker({
-  storageOptions: { skipBackup: true, path: 'image' },
-}, (response) => {
-  console.log(response);
-});
-
 const region = {
   latitude: 10.8231,
   longitude: 106.6297,
@@ -25,9 +19,6 @@ const coordinate = {
 };
 
 class PhotoMap extends Component {
-  static navigationOptions = {
-    title: 'PhotoMap',
-  }
   state = {
     searchResultsOpen: false,
     sourceText: 'Work',
