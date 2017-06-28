@@ -52856,11 +52856,35 @@ module.exports = {
   get CardStack() {
     return require(471                ).default; // 471 = ./views/CardStack
   },
+  get Card() {
+    return require(472           ).default; // 472 = ./views/Card
+  },
+
+  get Header() {
+    return require(482             ).default; // 482 = ./views/Header
+  },
+  get HeaderTitle() {
+    return require(483                  ).default; // 483 = ./views/HeaderTitle
+  },
+  get HeaderBackButton() {
+    return require(484                       ).default; // 484 = ./views/HeaderBackButton
+  },
+
   get DrawerView() {
     return require(515                        ).default; // 515 = ./views/Drawer/DrawerView
   },
+  get DrawerItems() {
+    return require(519                                  ).default; // 519 = ./views/Drawer/DrawerNavigatorItems
+  },
+
   get TabView() {
     return require(498                      ).default; // 498 = ./views/TabView/TabView
+  },
+  get TabBarTop() {
+    return require(509                        ).default; // 509 = ./views/TabView/TabBarTop
+  },
+  get TabBarBottom() {
+    return require(511                           ).default; // 511 = ./views/TabView/TabBarBottom
   },
 
   get withNavigation() {
@@ -52925,16 +52949,9 @@ function createNavigationContainer(Component, containerOptions) {
         }
         var nav = Component.router.getStateForAction(action, state.nav);
         if (nav && nav !== state.nav) {
-          if (console.group) {
-            console.group('Navigation Dispatch: ');
-            console.log('Action: ', action);
-            console.log('New State: ', nav);
-            console.log('Last State: ', state.nav);
-            console.groupEnd();
-          } else {
-            console.log('Navigation Dispatch: ', { action: action, newState: nav, lastState: state.nav });
-          }
-          _this.setState({ nav: nav });
+          _this.setState({ nav: nav }, function () {
+            return _this._onNavigationStateChange(state.nav, nav, action);
+          });
           return true;
         }
         return false;
@@ -52962,9 +52979,7 @@ function createNavigationContainer(Component, containerOptions) {
 
         var navigation = props.navigation,
             screenProps = props.screenProps,
-            navigationOptions = props.navigationOptions,
-            onNavigationStateChange = props.onNavigationStateChange,
-            containerProps = babelHelpers.objectWithoutProperties(props, ['navigation', 'screenProps', 'navigationOptions', 'onNavigationStateChange']);
+            containerProps = babelHelpers.objectWithoutProperties(props, ['navigation', 'screenProps']);
 
 
         var keys = Object.keys(containerProps);
@@ -52984,6 +52999,31 @@ function createNavigationContainer(Component, containerOptions) {
           path: path,
           params: params
         };
+      }
+    }, {
+      key: '_onNavigationStateChange',
+      value: function _onNavigationStateChange(prevNav, nav, action) {
+        if (typeof this.props.onNavigationStateChange === 'undefined' && this._isStateful()) {
+          if (console.group) {
+            console.group('Navigation Dispatch: ');
+            console.log('Action: ', action);
+            console.log('New State: ', nav);
+            console.log('Last State: ', prevNav);
+            console.groupEnd();
+          } else {
+            console.log('Navigation Dispatch: ', {
+              action: action,
+              newState: nav,
+              lastState: prevNav
+            });
+          }
+
+          return;
+        }
+
+        if (typeof this.props.onNavigationStateChange === 'function') {
+          this.props.onNavigationStateChange(prevNav, nav, action);
+        }
       }
     }, {
       key: 'componentWillReceiveProps',
@@ -53014,18 +53054,6 @@ function createNavigationContainer(Component, containerOptions) {
         });
       }
     }, {
-      key: 'componentDidUpdate',
-      value: function componentDidUpdate(prevProps, prevState) {
-        var _ref2 = this._isStateful() ? [prevState.nav, this.state.nav] : [prevProps.navigation.state, this.props.navigation.state],
-            _ref3 = babelHelpers.slicedToArray(_ref2, 2),
-            prevNavigationState = _ref3[0],
-            navigationState = _ref3[1];
-
-        if (prevNavigationState !== navigationState && typeof this.props.onNavigationStateChange === 'function') {
-          this.props.onNavigationStateChange(prevNavigationState, navigationState);
-        }
-      }
-    }, {
       key: 'componentWillUnmount',
       value: function componentWillUnmount() {
         _PlatformHelpers.Linking.removeEventListener('url', this._handleOpenURL);
@@ -53044,9 +53072,7 @@ function createNavigationContainer(Component, containerOptions) {
           }
           navigation = this._navigation;
         }
-        return _react2.default.createElement(Component, babelHelpers.extends({}, this.props, {
-          navigation: navigation
-        }));
+        return _react2.default.createElement(Component, babelHelpers.extends({}, this.props, { navigation: navigation }));
       }
     }]);
     return NavigationContainer;
@@ -53065,22 +53091,22 @@ exports.Linking = exports.BackAndroid = undefined;
 
 var _reactNative = require(46            ); // 46 = react-native
 
-exports.BackAndroid = _reactNative.BackAndroid;
+var BackAndroid = _reactNative.BackHandler || _reactNative.BackAndroid;
+
+exports.BackAndroid = BackAndroid;
 exports.Linking = _reactNative.Linking;
 }, 464, null, "react-navigation/src/PlatformHelpers.native.js");
 __d(/* react-navigation/src/NavigationActions.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
-var namespacedAction = function namespacedAction(action) {
-  return 'Navigation/' + action;
-};
 
-var BACK = namespacedAction('BACK');
-var INIT = namespacedAction('INIT');
-var NAVIGATE = namespacedAction('NAVIGATE');
-var RESET = namespacedAction('RESET');
-var SET_PARAMS = namespacedAction('SET_PARAMS');
-var URI = namespacedAction('URI');
+
+var BACK = 'Navigation/BACK';
+var INIT = 'Navigation/INIT';
+var NAVIGATE = 'Navigation/NAVIGATE';
+var RESET = 'Navigation/RESET';
+var SET_PARAMS = 'Navigation/SET_PARAMS';
+var URI = 'Navigation/URI';
 
 var createAction = function createAction(type) {
   return function () {
@@ -53305,9 +53331,7 @@ var createNavigator = function createNavigator(router, routeConfigs, navigatorCo
       babelHelpers.createClass(Navigator, [{
         key: 'render',
         value: function render() {
-          return _react2.default.createElement(View, babelHelpers.extends({}, this.props, {
-            router: router
-          }));
+          return _react2.default.createElement(View, babelHelpers.extends({}, this.props, { router: router }));
         }
       }]);
       return Navigator;
@@ -53358,10 +53382,10 @@ exports.default = function (routeConfigMap) {
   var initialRouteName = stackConfig.initialRouteName,
       initialRouteParams = stackConfig.initialRouteParams,
       paths = stackConfig.paths,
-      headerComponent = stackConfig.headerComponent,
       headerMode = stackConfig.headerMode,
       mode = stackConfig.mode,
       cardStyle = stackConfig.cardStyle,
+      transitionConfig = stackConfig.transitionConfig,
       onTransitionStart = stackConfig.onTransitionStart,
       onTransitionEnd = stackConfig.onTransitionEnd,
       navigationOptions = stackConfig.navigationOptions;
@@ -53374,12 +53398,13 @@ exports.default = function (routeConfigMap) {
   };
 
   var router = (0, _StackRouter2.default)(routeConfigMap, stackRouterConfig);
+
   var navigator = (0, _createNavigator2.default)(router, routeConfigMap, stackConfig, _NavigatorTypes2.default.STACK)(function (props) {
     return _react2.default.createElement(_CardStackTransitioner2.default, babelHelpers.extends({}, props, {
-      headerComponent: headerComponent,
       headerMode: headerMode,
       mode: mode,
       cardStyle: cardStyle,
+      transitionConfig: transitionConfig,
       onTransitionStart: onTransitionStart,
       onTransitionEnd: onTransitionEnd
     }));
@@ -53414,10 +53439,6 @@ var _TransitionConfigs = require(477                  ); // 477 = ./TransitionCo
 
 var _TransitionConfigs2 = babelHelpers.interopRequireDefault(_TransitionConfigs);
 
-var _Header = require(482       ); // 482 = ./Header
-
-var _Header2 = babelHelpers.interopRequireDefault(_Header);
-
 var NativeAnimatedModule = _reactNative.NativeModules && _reactNative.NativeModules.NativeAnimatedModule;
 
 var CardStackTransitioner = function (_Component) {
@@ -53445,20 +53466,20 @@ var CardStackTransitioner = function (_Component) {
     }, _this._render = function (props) {
       var _this$props = _this.props,
           screenProps = _this$props.screenProps,
-          headerComponent = _this$props.headerComponent,
           headerMode = _this$props.headerMode,
           mode = _this$props.mode,
           router = _this$props.router,
-          style = _this$props.style,
-          cardStyle = _this$props.cardStyle;
+          cardStyle = _this$props.cardStyle,
+          transitionConfig = _this$props.transitionConfig,
+          style = _this$props.style;
 
       return _react2.default.createElement(_CardStack2.default, babelHelpers.extends({
         screenProps: screenProps,
-        headerComponent: headerComponent,
         headerMode: headerMode,
         mode: mode,
         router: router,
         cardStyle: cardStyle,
+        transitionConfig: transitionConfig,
         style: style
       }, props));
     }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
@@ -53481,8 +53502,7 @@ var CardStackTransitioner = function (_Component) {
 }(_react.Component);
 
 CardStackTransitioner.defaultProps = {
-  mode: 'card',
-  headerComponent: _Header2.default
+  mode: 'card'
 };
 exports.default = CardStackTransitioner;
 }, 470, null, "react-navigation/src/views/CardStackTransitioner.js");
@@ -53494,11 +53514,19 @@ var _react = require(13     ); // 13 = react
 
 var _react2 = babelHelpers.interopRequireDefault(_react);
 
+var _clamp = require(476    ); // 476 = clamp
+
+var _clamp2 = babelHelpers.interopRequireDefault(_clamp);
+
 var _reactNative = require(46            ); // 46 = react-native
 
 var _Card = require(472     ); // 472 = ./Card
 
 var _Card2 = babelHelpers.interopRequireDefault(_Card);
+
+var _Header = require(482       ); // 482 = ./Header
+
+var _Header2 = babelHelpers.interopRequireDefault(_Header);
 
 var _NavigationActions = require(465                   ); // 465 = ../NavigationActions
 
@@ -53512,25 +53540,29 @@ var _SceneView = require(475          ); // 475 = ./SceneView
 
 var _SceneView2 = babelHelpers.interopRequireDefault(_SceneView);
 
-var _clamp = require(476    ); // 476 = clamp
-
-var _clamp2 = babelHelpers.interopRequireDefault(_clamp);
-
 var _TransitionConfigs = require(477                  ); // 477 = ./TransitionConfigs
 
 var _TransitionConfigs2 = babelHelpers.interopRequireDefault(_TransitionConfigs);
 
 var emptyFunction = function emptyFunction() {};
 
-var ANIMATION_DURATION = 200;
+var ANIMATION_DURATION = 500;
 
-var POSITION_THRESHOLD = 1 / 3;
+var POSITION_THRESHOLD = 1 / 2;
 
-var RESPOND_THRESHOLD = 12;
+var RESPOND_THRESHOLD = 20;
 
-var GESTURE_RESPONSE_DISTANCE = 35;
+var GESTURE_RESPONSE_DISTANCE_HORIZONTAL = 25;
+var GESTURE_RESPONSE_DISTANCE_VERTICAL = 135;
 
-var GESTURE_ANIMATED_VELOCITY_RATIO = -4;
+var animatedSubscribeValue = function animatedSubscribeValue(animatedValue) {
+  if (!animatedValue.__isNative) {
+    return;
+  }
+  if (Object.keys(animatedValue._listeners).length === 0) {
+    animatedValue.addListener(emptyFunction);
+  }
+};
 
 var CardStack = function (_Component) {
   babelHelpers.inherits(CardStack, _Component);
@@ -53575,12 +53607,15 @@ var CardStack = function (_Component) {
 
       var SceneComponent = _this.props.router.getComponentForRouteName(scene.route.routeName);
 
-      return _react2.default.createElement(_Card2.default, babelHelpers.extends({}, _this.props, {
-        key: 'card_' + scene.key,
-        children: _this._renderInnerScene(SceneComponent, scene),
-        style: [style, _this.props.cardStyle],
-        scene: scene
-      }));
+      return _react2.default.createElement(
+        _Card2.default,
+        babelHelpers.extends({}, _this.props, {
+          key: 'card_' + scene.key,
+          style: [style, _this.props.cardStyle],
+          scene: scene
+        }),
+        _this._renderInnerScene(SceneComponent, scene)
+      );
     }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
   }
 
@@ -53601,7 +53636,22 @@ var CardStack = function (_Component) {
   }, {
     key: '_renderHeader',
     value: function _renderHeader(scene, headerMode) {
-      return _react2.default.createElement(this.props.headerComponent, babelHelpers.extends({}, this.props, {
+      var header = this._getScreenDetails(scene).options.header;
+
+      if (typeof header !== 'undefined' && typeof header !== 'function') {
+        return header;
+      }
+
+      var renderHeader = header || function (props) {
+        return _react2.default.createElement(_Header2.default, props);
+      };
+
+      var _props = this.props,
+          mode = _props.mode,
+          passProps = babelHelpers.objectWithoutProperties(_props, ['mode']);
+
+
+      return renderHeader(babelHelpers.extends({}, passProps, {
         scene: scene,
         mode: headerMode,
         getScreenDetails: this._getScreenDetails
@@ -53610,40 +53660,29 @@ var CardStack = function (_Component) {
   }, {
     key: '_animatedSubscribe',
     value: function _animatedSubscribe(props) {
-      this._animatedSubscribeValue(props.layout.width);
-      this._animatedSubscribeValue(props.layout.height);
-      this._animatedSubscribeValue(props.position);
-    }
-  }, {
-    key: '_animatedSubscribeValue',
-    value: function _animatedSubscribeValue(animatedValue) {
-      if (!animatedValue.__isNative) {
-        return;
-      }
-      if (Object.keys(animatedValue._listeners).length === 0) {
-        animatedValue.addListener(emptyFunction);
-      }
+      animatedSubscribeValue(props.layout.width);
+      animatedSubscribeValue(props.layout.height);
+      animatedSubscribeValue(props.position);
     }
   }, {
     key: '_reset',
-    value: function _reset(resetToIndex, velocity) {
+    value: function _reset(resetToIndex, duration) {
       _reactNative.Animated.timing(this.props.position, {
         toValue: resetToIndex,
-        duration: ANIMATION_DURATION,
-        useNativeDriver: this.props.position.__isNative,
-        velocity: velocity * GESTURE_ANIMATED_VELOCITY_RATIO,
-        bounciness: 0
+        duration: duration,
+        easing: _reactNative.Easing.linear(),
+        useNativeDriver: this.props.position.__isNative
       }).start();
     }
   }, {
     key: '_goBack',
-    value: function _goBack(backFromIndex, velocity) {
+    value: function _goBack(backFromIndex, duration) {
       var _this3 = this;
 
-      var _props = this.props,
-          navigation = _props.navigation,
-          position = _props.position,
-          scenes = _props.scenes;
+      var _props2 = this.props,
+          navigation = _props2.navigation,
+          position = _props2.position,
+          scenes = _props2.scenes;
 
       var toValue = Math.max(backFromIndex - 1, 0);
 
@@ -53651,13 +53690,10 @@ var CardStack = function (_Component) {
 
       _reactNative.Animated.timing(position, {
         toValue: toValue,
-        duration: ANIMATION_DURATION,
-        useNativeDriver: position.__isNative,
-        velocity: velocity * GESTURE_ANIMATED_VELOCITY_RATIO,
-        bounciness: 0
-      }).start(function (_ref2) {
-        var finished = _ref2.finished;
-
+        duration: duration,
+        easing: _reactNative.Easing.linear(),
+        useNativeDriver: position.__isNative
+      }).start(function () {
         _this3._immediateIndex = null;
         var backFromScene = scenes.find(function (s) {
           return s.index === toValue + 1;
@@ -53677,13 +53713,16 @@ var CardStack = function (_Component) {
       if (headerMode === 'float') {
         floatingHeader = this._renderHeader(this.props.scene, headerMode);
       }
-      var _props2 = this.props,
-          navigation = _props2.navigation,
-          position = _props2.position,
-          scene = _props2.scene,
-          mode = _props2.mode,
-          scenes = _props2.scenes;
+      var _props3 = this.props,
+          navigation = _props3.navigation,
+          position = _props3.position,
+          layout = _props3.layout,
+          scene = _props3.scene,
+          scenes = _props3.scenes,
+          mode = _props3.mode;
       var index = navigation.state.index;
+
+      var isVertical = mode === 'modal';
 
       var responder = _reactNative.PanResponder.create({
         onPanResponderTerminate: function onPanResponderTerminate() {
@@ -53697,11 +53736,9 @@ var CardStack = function (_Component) {
           });
         },
         onMoveShouldSetPanResponder: function onMoveShouldSetPanResponder(event, gesture) {
-          var layout = _this4.props.layout;
           if (index !== scene.index) {
             return false;
           }
-          var isVertical = false;
           var immediateIndex = _this4._immediateIndex == null ? index : _this4._immediateIndex;
           var currentDragDistance = gesture[isVertical ? 'dy' : 'dx'];
           var currentDragPosition = event.nativeEvent[isVertical ? 'pageY' : 'pageX'];
@@ -53710,7 +53747,9 @@ var CardStack = function (_Component) {
 
           var screenEdgeDistance = currentDragPosition - currentDragDistance;
 
-          if (screenEdgeDistance > GESTURE_RESPONSE_DISTANCE) {
+          var gestureResponseDistance = isVertical ? GESTURE_RESPONSE_DISTANCE_VERTICAL : GESTURE_RESPONSE_DISTANCE_HORIZONTAL;
+
+          if (screenEdgeDistance > gestureResponseDistance) {
             return false;
           }
 
@@ -53721,16 +53760,14 @@ var CardStack = function (_Component) {
           return shouldSetResponder;
         },
         onPanResponderMove: function onPanResponderMove(event, gesture) {
-          var layout = _this4.props.layout;
-          var isVertical = false;
           var startValue = _this4._gestureStartValue;
           var axis = isVertical ? 'dy' : 'dx';
-          var distance = isVertical ? layout.height.__getValue() : layout.width.__getValue();
-          var currentValue = _reactNative.I18nManager.isRTL && axis === 'dx' ? startValue + gesture[axis] / distance : startValue - gesture[axis] / distance;
+          var axisDistance = isVertical ? layout.height.__getValue() : layout.width.__getValue();
+          var currentValue = _reactNative.I18nManager.isRTL && axis === 'dx' ? startValue + gesture[axis] / axisDistance : startValue - gesture[axis] / axisDistance;
           var value = (0, _clamp2.default)(index - 1, currentValue, index);
           position.setValue(value);
         },
-        onPanResponderTerminationRequest: function onPanResponderTerminationRequest(event, gesture) {
+        onPanResponderTerminationRequest: function onPanResponderTerminationRequest() {
           return false;
         },
         onPanResponderRelease: function onPanResponderRelease(event, gesture) {
@@ -53738,42 +53775,51 @@ var CardStack = function (_Component) {
             return;
           }
           _this4._isResponding = false;
-          var isVertical = false;
-          var axis = isVertical ? 'dy' : 'dx';
-          var velocity = gesture[isVertical ? 'vy' : 'vx'];
+
           var immediateIndex = _this4._immediateIndex == null ? index : _this4._immediateIndex;
 
+          var axisDistance = isVertical ? layout.height.__getValue() : layout.width.__getValue();
+          var movedDistance = gesture[isVertical ? 'moveY' : 'moveX'];
+          var defaultVelocity = axisDistance / ANIMATION_DURATION;
+          var gestureVelocity = gesture[isVertical ? 'vy' : 'vx'];
+          var velocity = Math.max(gestureVelocity, defaultVelocity);
+          var resetDuration = movedDistance / velocity;
+          var goBackDuration = (axisDistance - movedDistance) / velocity;
+
           position.stopAnimation(function (value) {
-            if (velocity < -0.5) {
-              _this4._reset(immediateIndex, velocity);
+            if (gestureVelocity < -0.5) {
+              _this4._reset(immediateIndex, resetDuration);
               return;
             }
-            if (velocity > 0.5) {
-              _this4._goBack(immediateIndex, velocity);
+            if (gestureVelocity > 0.5) {
+              _this4._goBack(immediateIndex, goBackDuration);
               return;
             }
 
             if (value <= index - POSITION_THRESHOLD) {
-              _this4._goBack(immediateIndex, velocity);
+              _this4._goBack(immediateIndex, goBackDuration);
             } else {
-              _this4._reset(immediateIndex, velocity);
+              _this4._reset(immediateIndex, resetDuration);
             }
           });
         }
       });
 
-      var gesturesEnabled = mode === 'card' && _reactNative.Platform.OS === 'ios';
+      var _getScreenDetails = this._getScreenDetails(scene),
+          options = _getScreenDetails.options;
+
+      var gesturesEnabled = typeof options.gesturesEnabled === 'boolean' ? options.gesturesEnabled : _reactNative.Platform.OS === 'ios';
+
       var handlers = gesturesEnabled ? responder.panHandlers : {};
 
       return _react2.default.createElement(
         _reactNative.View,
-        babelHelpers.extends({}, handlers, {
-          style: styles.container }),
+        babelHelpers.extends({}, handlers, { style: styles.container }),
         _react2.default.createElement(
           _reactNative.View,
           { style: styles.scenes },
-          scenes.map(function (scene) {
-            return _this4._renderCard(scene);
+          scenes.map(function (s) {
+            return _this4._renderCard(s);
           })
         ),
         floatingHeader
@@ -53793,16 +53839,13 @@ var CardStack = function (_Component) {
   }, {
     key: '_renderInnerScene',
     value: function _renderInnerScene(SceneComponent, scene) {
-      var _getScreenDetails = this._getScreenDetails(scene),
-          navigation = _getScreenDetails.navigation,
-          options = _getScreenDetails.options;
+      var _getScreenDetails2 = this._getScreenDetails(scene),
+          navigation = _getScreenDetails2.navigation;
 
       var screenProps = this.props.screenProps;
 
       var headerMode = this._getHeaderMode();
       if (headerMode === 'screen') {
-        var isHeaderHidden = options.headerVisible === false;
-        var maybeHeader = isHeaderHidden ? null : this._renderHeader(scene, headerMode);
         return _react2.default.createElement(
           _reactNative.View,
           { style: styles.container },
@@ -53812,18 +53855,16 @@ var CardStack = function (_Component) {
             _react2.default.createElement(_SceneView2.default, {
               screenProps: screenProps,
               navigation: navigation,
-              component: SceneComponent,
-              navigationOptions: options
+              component: SceneComponent
             })
           ),
-          maybeHeader
+          this._renderHeader(scene, headerMode)
         );
       }
       return _react2.default.createElement(_SceneView2.default, {
         screenProps: this.props.screenProps,
         navigation: navigation,
-        component: SceneComponent,
-        navigationOptions: options
+        component: SceneComponent
       });
     }
   }]);
@@ -53843,6 +53884,12 @@ var styles = _reactNative.StyleSheet.create({
 
 exports.default = CardStack;
 }, 471, null, "react-navigation/src/views/CardStack.js");
+__d(/* clamp/index.js */function(global, require, module, exports) {module.exports = clamp;
+
+function clamp(value, min, max) {
+  return min < max ? value < min ? min : value > max ? max : value : value < max ? max : value > min ? min : value;
+}
+}, 476, null, "clamp/index.js");
 __d(/* react-navigation/src/views/Card.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -53871,7 +53918,6 @@ var Card = function (_React$Component) {
       var _props = this.props,
           children = _props.children,
           pointerEvents = _props.pointerEvents,
-          scene = _props.scene,
           style = _props.style;
 
       return _react2.default.createElement(
@@ -54046,6 +54092,613 @@ var AnimatedValueSubscription = function () {
 
 exports.default = AnimatedValueSubscription;
 }, 474, null, "react-navigation/src/views/AnimatedValueSubscription.js");
+__d(/* react-navigation/src/views/Header.js */function(global, require, module, exports) {
+
+'no babel-plugin-flow-react-proptypes';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require(13     ); // 13 = react
+
+var _react2 = babelHelpers.interopRequireDefault(_react);
+
+var _reactNative = require(46            ); // 46 = react-native
+
+var _HeaderTitle = require(483            ); // 483 = ./HeaderTitle
+
+var _HeaderTitle2 = babelHelpers.interopRequireDefault(_HeaderTitle);
+
+var _HeaderBackButton = require(484                 ); // 484 = ./HeaderBackButton
+
+var _HeaderBackButton2 = babelHelpers.interopRequireDefault(_HeaderBackButton);
+
+var _HeaderStyleInterpolator = require(479                        ); // 479 = ./HeaderStyleInterpolator
+
+var _HeaderStyleInterpolator2 = babelHelpers.interopRequireDefault(_HeaderStyleInterpolator);
+
+var APPBAR_HEIGHT = _reactNative.Platform.OS === 'ios' ? 44 : 56;
+var STATUSBAR_HEIGHT = _reactNative.Platform.OS === 'ios' ? 20 : 0;
+var TITLE_OFFSET = _reactNative.Platform.OS === 'ios' ? 70 : 40;
+
+var Header = function (_React$PureComponent) {
+  babelHelpers.inherits(Header, _React$PureComponent);
+
+  function Header() {
+    var _ref;
+
+    var _temp, _this, _ret;
+
+    babelHelpers.classCallCheck(this, Header);
+
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = Header.__proto__ || Object.getPrototypeOf(Header)).call.apply(_ref, [this].concat(args))), _this), _this.state = {
+      widths: {}
+    }, _this._renderTitleComponent = function (props) {
+      var details = _this.props.getScreenDetails(props.scene);
+      var headerTitle = details.options.headerTitle;
+      if (headerTitle && typeof headerTitle !== 'string') {
+        return headerTitle;
+      }
+      var titleString = _this._getHeaderTitleString(props.scene);
+
+      var titleStyle = details.options.headerTitleStyle;
+      var color = details.options.headerTintColor;
+
+      var onLayoutIOS = _reactNative.Platform.OS === 'ios' ? function (e) {
+        _this.setState({
+          widths: babelHelpers.extends({}, _this.state.widths, babelHelpers.defineProperty({}, props.scene.key, e.nativeEvent.layout.width))
+        });
+      } : undefined;
+
+      return _react2.default.createElement(
+        _HeaderTitle2.default,
+        {
+          onLayout: onLayoutIOS,
+          style: [color ? { color: color } : null, titleStyle]
+        },
+        titleString
+      );
+    }, _this._renderLeftComponent = function (props) {
+      var options = _this.props.getScreenDetails(props.scene).options;
+      if (typeof options.headerLeft !== 'undefined') {
+        return options.headerLeft;
+      }
+      if (props.scene.index === 0) {
+        return null;
+      }
+      var backButtonTitle = _this._getBackButtonTitleString(props.scene);
+      var truncatedBackButtonTitle = _this._getTruncatedBackButtonTitle(props.scene);
+      var width = _this.state.widths[props.scene.key] ? (_this.props.layout.initWidth - _this.state.widths[props.scene.key]) / 2 : undefined;
+      return _react2.default.createElement(_HeaderBackButton2.default, {
+        onPress: function onPress() {
+          _this.props.navigation.goBack(null);
+        },
+        pressColorAndroid: options.headerPressColorAndroid,
+        tintColor: options.headerTintColor,
+        title: backButtonTitle,
+        truncatedTitle: truncatedBackButtonTitle,
+        titleStyle: options.headerBackTitleStyle,
+        width: width
+      });
+    }, _this._renderRightComponent = function (props) {
+      var details = _this.props.getScreenDetails(props.scene);
+      var headerRight = details.options.headerRight;
+
+      return headerRight || null;
+    }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
+  }
+
+  babelHelpers.createClass(Header, [{
+    key: '_getHeaderTitleString',
+    value: function _getHeaderTitleString(scene) {
+      var sceneOptions = this.props.getScreenDetails(scene).options;
+      if (typeof sceneOptions.headerTitle === 'string') {
+        return sceneOptions.headerTitle;
+      }
+      return sceneOptions.title;
+    }
+  }, {
+    key: '_getLastScene',
+    value: function _getLastScene(scene) {
+      return this.props.scenes.find(function (s) {
+        return s.index === scene.index - 1;
+      });
+    }
+  }, {
+    key: '_getBackButtonTitleString',
+    value: function _getBackButtonTitleString(scene) {
+      var lastScene = this._getLastScene(scene);
+      if (!lastScene) {
+        return null;
+      }
+      var headerBackTitle = this.props.getScreenDetails(lastScene).options.headerBackTitle;
+
+      if (headerBackTitle || headerBackTitle === null) {
+        return headerBackTitle;
+      }
+      return this._getHeaderTitleString(lastScene);
+    }
+  }, {
+    key: '_getTruncatedBackButtonTitle',
+    value: function _getTruncatedBackButtonTitle(scene) {
+      var lastScene = this._getLastScene(scene);
+      if (!lastScene) {
+        return null;
+      }
+      return this.props.getScreenDetails(lastScene).options.headerTruncatedBackTitle;
+    }
+  }, {
+    key: '_renderLeft',
+    value: function _renderLeft(props) {
+      return this._renderSubView(props, 'left', this._renderLeftComponent, _HeaderStyleInterpolator2.default.forLeft);
+    }
+  }, {
+    key: '_renderTitle',
+    value: function _renderTitle(props, options) {
+      var style = {};
+
+      if (_reactNative.Platform.OS === 'android') {
+        if (!options.hasLeftComponent) {
+          style.left = 0;
+        }
+        if (!options.hasRightComponent) {
+          style.right = 0;
+        }
+      }
+
+      return this._renderSubView(babelHelpers.extends({}, props, { style: style }), 'title', this._renderTitleComponent, _HeaderStyleInterpolator2.default.forCenter);
+    }
+  }, {
+    key: '_renderRight',
+    value: function _renderRight(props) {
+      return this._renderSubView(props, 'right', this._renderRightComponent, _HeaderStyleInterpolator2.default.forRight);
+    }
+  }, {
+    key: '_renderSubView',
+    value: function _renderSubView(props, name, renderer, styleInterpolator) {
+      var scene = props.scene;
+      var index = scene.index,
+          isStale = scene.isStale,
+          key = scene.key;
+
+
+      var offset = this.props.navigation.state.index - index;
+
+      if (Math.abs(offset) > 2) {
+        return null;
+      }
+
+      var subView = renderer(props);
+
+      if (subView == null) {
+        return null;
+      }
+
+      var pointerEvents = offset !== 0 || isStale ? 'none' : 'box-none';
+
+      return _react2.default.createElement(
+        _reactNative.Animated.View,
+        {
+          pointerEvents: pointerEvents,
+          key: name + '_' + key,
+          style: [styles.item, styles[name], props.style, styleInterpolator(babelHelpers.extends({}, this.props, props))]
+        },
+        subView
+      );
+    }
+  }, {
+    key: '_renderHeader',
+    value: function _renderHeader(props) {
+      var left = this._renderLeft(props);
+      var right = this._renderRight(props);
+      var title = this._renderTitle(props, {
+        hasLeftComponent: !!left,
+        hasRightComponent: !!right
+      });
+
+      return _react2.default.createElement(
+        _reactNative.View,
+        {
+          style: [_reactNative.StyleSheet.absoluteFill, styles.header],
+          key: 'scene_' + props.scene.key
+        },
+        title,
+        left,
+        right
+      );
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      var _this2 = this;
+
+      var appBar = void 0;
+
+      if (this.props.mode === 'float') {
+        var scenesProps = this.props.scenes.map(function (scene) {
+          return {
+            position: _this2.props.position,
+            progress: _this2.props.progress,
+            scene: scene
+          };
+        });
+        appBar = scenesProps.map(this._renderHeader, this);
+      } else {
+        appBar = this._renderHeader({
+          position: new _reactNative.Animated.Value(this.props.scene.index),
+          progress: new _reactNative.Animated.Value(0),
+          scene: this.props.scene
+        });
+      }
+
+      var _props = this.props,
+          scenes = _props.scenes,
+          scene = _props.scene,
+          position = _props.position,
+          screenProps = _props.screenProps,
+          progress = _props.progress,
+          style = _props.style,
+          rest = babelHelpers.objectWithoutProperties(_props, ['scenes', 'scene', 'position', 'screenProps', 'progress', 'style']);
+
+      var _props$getScreenDetai = this.props.getScreenDetails(scene, screenProps),
+          options = _props$getScreenDetai.options;
+
+      var headerStyle = options.headerStyle;
+
+      return _react2.default.createElement(
+        _reactNative.Animated.View,
+        babelHelpers.extends({}, rest, { style: [styles.container, headerStyle, style] }),
+        _react2.default.createElement(
+          _reactNative.View,
+          { style: styles.appBar },
+          appBar
+        )
+      );
+    }
+  }]);
+  return Header;
+}(_react2.default.PureComponent);
+
+Header.HEIGHT = APPBAR_HEIGHT + STATUSBAR_HEIGHT;
+
+
+var styles = _reactNative.StyleSheet.create({
+  container: {
+    paddingTop: STATUSBAR_HEIGHT,
+    backgroundColor: _reactNative.Platform.OS === 'ios' ? '#EFEFF2' : '#FFF',
+    height: STATUSBAR_HEIGHT + APPBAR_HEIGHT,
+    shadowColor: 'black',
+    shadowOpacity: 0.1,
+    shadowRadius: _reactNative.StyleSheet.hairlineWidth,
+    shadowOffset: {
+      height: _reactNative.StyleSheet.hairlineWidth
+    },
+    elevation: 4
+  },
+  appBar: {
+    flex: 1
+  },
+  header: {
+    flexDirection: 'row'
+  },
+  item: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent'
+  },
+  title: {
+    bottom: 0,
+    left: TITLE_OFFSET,
+    right: TITLE_OFFSET,
+    top: 0,
+    position: 'absolute',
+    alignItems: _reactNative.Platform.OS === 'ios' ? 'center' : 'flex-start'
+  },
+  left: {
+    left: 0,
+    bottom: 0,
+    top: 0,
+    position: 'absolute'
+  },
+  right: {
+    right: 0,
+    bottom: 0,
+    top: 0,
+    position: 'absolute'
+  }
+});
+
+exports.default = Header;
+}, 482, null, "react-navigation/src/views/Header.js");
+__d(/* react-navigation/src/views/HeaderTitle.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require(13     ); // 13 = react
+
+var _react2 = babelHelpers.interopRequireDefault(_react);
+
+var _reactNative = require(46            ); // 46 = react-native
+
+var HeaderTitle = function HeaderTitle(_ref) {
+  var style = _ref.style,
+      rest = babelHelpers.objectWithoutProperties(_ref, ['style']);
+  return _react2.default.createElement(_reactNative.Text, babelHelpers.extends({
+    numberOfLines: 1
+  }, rest, {
+    style: [styles.title, style],
+    accessibilityTraits: 'header'
+  }));
+};
+
+var styles = _reactNative.StyleSheet.create({
+  title: {
+    fontSize: _reactNative.Platform.OS === 'ios' ? 17 : 18,
+    fontWeight: _reactNative.Platform.OS === 'ios' ? '600' : '500',
+    color: 'rgba(0, 0, 0, .9)',
+    textAlign: _reactNative.Platform.OS === 'ios' ? 'center' : 'left',
+    marginHorizontal: 16
+  }
+});
+
+exports.default = HeaderTitle;
+}, 483, null, "react-navigation/src/views/HeaderTitle.js");
+__d(/* react-navigation/src/views/HeaderBackButton.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require(13     ); // 13 = react
+
+var _react2 = babelHelpers.interopRequireDefault(_react);
+
+var _reactNative = require(46            ); // 46 = react-native
+
+var _TouchableItem = require(485              ); // 485 = ./TouchableItem
+
+var _TouchableItem2 = babelHelpers.interopRequireDefault(_TouchableItem);
+
+var HeaderBackButton = function (_React$PureComponent) {
+  babelHelpers.inherits(HeaderBackButton, _React$PureComponent);
+
+  function HeaderBackButton() {
+    var _ref;
+
+    var _temp, _this, _ret;
+
+    babelHelpers.classCallCheck(this, HeaderBackButton);
+
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = HeaderBackButton.__proto__ || Object.getPrototypeOf(HeaderBackButton)).call.apply(_ref, [this].concat(args))), _this), _this.state = {}, _this._onTextLayout = function (e) {
+      if (_this.state.initialTextWidth) {
+        return;
+      }
+      _this.setState({
+        initialTextWidth: e.nativeEvent.layout.x + e.nativeEvent.layout.width
+      });
+    }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
+  }
+
+  babelHelpers.createClass(HeaderBackButton, [{
+    key: 'render',
+    value: function render() {
+      var _props = this.props,
+          onPress = _props.onPress,
+          pressColorAndroid = _props.pressColorAndroid,
+          width = _props.width,
+          title = _props.title,
+          titleStyle = _props.titleStyle,
+          tintColor = _props.tintColor,
+          truncatedTitle = _props.truncatedTitle;
+
+
+      var renderTruncated = this.state.initialTextWidth && width ? this.state.initialTextWidth > width : false;
+
+      var backButtonTitle = renderTruncated ? truncatedTitle : title;
+
+      var asset = require(486                     ); // 486 = ./assets/back-icon.png
+
+      return _react2.default.createElement(
+        _TouchableItem2.default,
+        {
+          accessibilityComponentType: 'button',
+          accessibilityLabel: backButtonTitle,
+          accessibilityTraits: 'button',
+          testID: 'header-back',
+          delayPressIn: 0,
+          onPress: onPress,
+          pressColor: pressColorAndroid,
+          style: styles.container,
+          borderless: true
+        },
+        _react2.default.createElement(
+          _reactNative.View,
+          { style: styles.container },
+          _react2.default.createElement(_reactNative.Image, {
+            style: [styles.icon, title && styles.iconWithTitle, { tintColor: tintColor }],
+            source: asset
+          }),
+          _reactNative.Platform.OS === 'ios' && title && _react2.default.createElement(
+            _reactNative.Text,
+            {
+              onLayout: this._onTextLayout,
+              style: [styles.title, { color: tintColor }, titleStyle],
+              numberOfLines: 1
+            },
+            backButtonTitle
+          )
+        )
+      );
+    }
+  }]);
+  return HeaderBackButton;
+}(_react2.default.PureComponent);
+
+HeaderBackButton.defaultProps = {
+  pressColorAndroid: 'rgba(0, 0, 0, .32)',
+  tintColor: _reactNative.Platform.select({
+    ios: '#037aff'
+  }),
+  truncatedTitle: 'Back'
+};
+
+
+var styles = _reactNative.StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    backgroundColor: 'transparent'
+  },
+  title: {
+    fontSize: 17,
+    paddingRight: 10
+  },
+  icon: _reactNative.Platform.OS === 'ios' ? {
+    height: 20,
+    width: 12,
+    marginLeft: 10,
+    marginRight: 22,
+    marginVertical: 12,
+    resizeMode: 'contain',
+    transform: [{ scaleX: _reactNative.I18nManager.isRTL ? -1 : 1 }]
+  } : {
+    height: 24,
+    width: 24,
+    margin: 16,
+    resizeMode: 'contain',
+    transform: [{ scaleX: _reactNative.I18nManager.isRTL ? -1 : 1 }]
+  },
+  iconWithTitle: _reactNative.Platform.OS === 'ios' ? {
+    marginRight: 5
+  } : {}
+});
+
+exports.default = HeaderBackButton;
+}, 484, null, "react-navigation/src/views/HeaderBackButton.js");
+__d(/* react-navigation/src/views/TouchableItem.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require(13     ); // 13 = react
+
+var _react2 = babelHelpers.interopRequireDefault(_react);
+
+var _reactNative = require(46            ); // 46 = react-native
+
+var ANDROID_VERSION_LOLLIPOP = 21;
+
+var TouchableItem = function (_Component) {
+  babelHelpers.inherits(TouchableItem, _Component);
+
+  function TouchableItem() {
+    babelHelpers.classCallCheck(this, TouchableItem);
+    return babelHelpers.possibleConstructorReturn(this, (TouchableItem.__proto__ || Object.getPrototypeOf(TouchableItem)).apply(this, arguments));
+  }
+
+  babelHelpers.createClass(TouchableItem, [{
+    key: 'render',
+    value: function render() {
+      if (_reactNative.Platform.OS === 'android' && _reactNative.Platform.Version >= ANDROID_VERSION_LOLLIPOP) {
+        var _props = this.props,
+            _style = _props.style,
+            rest = babelHelpers.objectWithoutProperties(_props, ['style']);
+
+
+        return _react2.default.createElement(
+          _reactNative.TouchableNativeFeedback,
+          babelHelpers.extends({}, rest, {
+            style: null,
+            background: _reactNative.TouchableNativeFeedback.Ripple(this.props.pressColor, this.props.borderless)
+          }),
+          _react2.default.createElement(
+            _reactNative.View,
+            { style: this.props.style },
+            _react.Children.only(this.props.children)
+          )
+        );
+      }
+
+      return _react2.default.createElement(
+        _reactNative.TouchableOpacity,
+        this.props,
+        this.props.children
+      );
+    }
+  }]);
+  return TouchableItem;
+}(_react.Component);
+
+TouchableItem.defaultProps = {
+  pressColor: 'rgba(0, 0, 0, .32)'
+};
+exports.default = TouchableItem;
+}, 485, null, "react-navigation/src/views/TouchableItem.js");
+__d(/* react-navigation/src/views/assets/back-icon.png */function(global, require, module, exports) {module.exports = require(240                                         ).registerAsset({"__packager_asset":true,"httpServerLocation":"/assets/node_modules/react-navigation/src/views/assets","width":13,"height":21,"scales":[1,1.5,2,3,4],"hash":"4bb8d26cef10f7806299143d3e6ff20d","name":"back-icon","type":"png"}); // 240 = react-native/Libraries/Image/AssetRegistry
+}, 486, null, "react-navigation/src/views/assets/back-icon.png");
+__d(/* react-navigation/src/views/HeaderStyleInterpolator.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _reactNative = require(46            ); // 46 = react-native
+
+function forLeft(props) {
+  var position = props.position,
+      scene = props.scene;
+  var index = scene.index;
+
+  return {
+    opacity: position.interpolate({
+      inputRange: [index - 1, index - 0.5, index, index + 0.5, index + 1],
+      outputRange: [0, 0, 1, 0, 0]
+    })
+  };
+}
+
+function forCenter(props) {
+  var position = props.position,
+      scene = props.scene;
+  var index = scene.index;
+
+  return {
+    opacity: position.interpolate({
+      inputRange: [index - 1, index, index + 1],
+      outputRange: [0, 1, 0]
+    }),
+    transform: [{
+      translateX: position.interpolate({
+        inputRange: [index - 1, index + 1],
+        outputRange: _reactNative.I18nManager.isRTL ? [-200, 200] : [200, -200]
+      })
+    }]
+  };
+}
+
+function forRight(props) {
+  var position = props.position,
+      scene = props.scene;
+  var index = scene.index;
+
+  return {
+    opacity: position.interpolate({
+      inputRange: [index - 1, index, index + 1],
+      outputRange: [0, 1, 0]
+    })
+  };
+}
+
+exports.default = {
+  forLeft: forLeft,
+  forCenter: forCenter,
+  forRight: forRight
+};
+}, 479, null, "react-navigation/src/views/HeaderStyleInterpolator.js");
 __d(/* react-navigation/src/views/SceneView.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -54079,15 +54732,10 @@ var SceneView = function (_PureComponent) {
       var _props = this.props,
           screenProps = _props.screenProps,
           navigation = _props.navigation,
-          navigationOptions = _props.navigationOptions,
           Component = _props.component;
 
 
-      return _react2.default.createElement(Component, {
-        screenProps: screenProps,
-        navigation: navigation,
-        navigationOptions: navigationOptions
-      });
+      return _react2.default.createElement(Component, { screenProps: screenProps, navigation: navigation });
     }
   }]);
   return SceneView;
@@ -54098,38 +54746,35 @@ SceneView.childContextTypes = {
 };
 exports.default = SceneView;
 }, 475, null, "react-navigation/src/views/SceneView.js");
-__d(/* clamp/index.js */function(global, require, module, exports) {module.exports = clamp;
-
-function clamp(value, min, max) {
-  return min < max ? value < min ? min : value > max ? max : value : value < max ? max : value > min ? min : value;
-}
-}, 476, null, "clamp/index.js");
 __d(/* react-navigation/src/views/TransitionConfigs.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _reactNative = require(46            ); // 46 = react-native
 
 var _CardStackStyleInterpolator = require(478                           ); // 478 = ./CardStackStyleInterpolator
 
 var _CardStackStyleInterpolator2 = babelHelpers.interopRequireDefault(_CardStackStyleInterpolator);
 
-var _HeaderStyleInterpolator = require(479                        ); // 479 = ./HeaderStyleInterpolator
-
-var _HeaderStyleInterpolator2 = babelHelpers.interopRequireDefault(_HeaderStyleInterpolator);
-
-var _reactNative = require(46            ); // 46 = react-native
-
 var DefaultTransitionSpec = {
   duration: 250,
-  timing: _reactNative.Animated.spring,
-  bounciness: 0,
-  speed: 9
+  easing: _reactNative.Easing.inOut(_reactNative.Easing.ease),
+  timing: _reactNative.Animated.timing
+};
+
+var IOSTransitionSpec = {
+  duration: 500,
+  easing: _reactNative.Easing.bezier(0.2833, 0.99, 0.31833, 0.99),
+  timing: _reactNative.Animated.timing
 };
 
 var SlideFromRightIOS = {
+  transitionSpec: IOSTransitionSpec,
   screenInterpolator: _CardStackStyleInterpolator2.default.forHorizontal
 };
 
 var ModalSlideFromBottomIOS = {
+  transitionSpec: IOSTransitionSpec,
   screenInterpolator: _CardStackStyleInterpolator2.default.forVertical
 };
 
@@ -54157,13 +54802,12 @@ function defaultTransitionConfig(transitionProps, prevTransitionProps, isModal) 
       return FadeOutToBottomAndroid;
     }
     return FadeInFromBottomAndroid;
-  } else {
-    if (isModal) {
-      return ModalSlideFromBottomIOS;
-    } else {
-      return SlideFromRightIOS;
-    }
   }
+
+  if (isModal) {
+    return ModalSlideFromBottomIOS;
+  }
+  return SlideFromRightIOS;
 }
 
 function getTransitionConfig(transitionConfigurer, transitionProps, prevTransitionProps, isModal) {
@@ -54212,14 +54856,14 @@ function forHorizontal(props) {
   }
 
   var index = scene.index;
-  var inputRange = [index - 1, index, index + 0.99, index + 1];
+  var inputRange = [index - 1, index, index + 1];
 
-  var width = layout.initWidth + 30;
-  var outputRange = _reactNative.I18nManager.isRTL ? [-width, 0, 10, 10] : [width, 0, -10, -10];
+  var width = layout.initWidth;
+  var outputRange = _reactNative.I18nManager.isRTL ? [-width, 0, 10] : [width, 0, -10];
 
   var opacity = position.interpolate({
-    inputRange: inputRange,
-    outputRange: [1, 1, 0.3, 0]
+    inputRange: [index - 1, index - 0.99, index, index + 0.99, index + 1],
+    outputRange: [0, 1, 1, 0.3, 0]
   });
 
   var translateY = 0;
@@ -54245,18 +54889,17 @@ function forVertical(props) {
   }
 
   var index = scene.index;
-  var inputRange = [index - 1, index, index + 0.99, index + 1];
   var height = layout.initHeight;
 
   var opacity = position.interpolate({
-    inputRange: inputRange,
-    outputRange: [1, 1, 0.3, 0]
+    inputRange: [index - 1, index - 0.99, index, index + 0.99, index + 1],
+    outputRange: [0, 1, 1, 0.3, 0]
   });
 
   var translateX = 0;
   var translateY = position.interpolate({
-    inputRange: inputRange,
-    outputRange: [height, 0, 0, 0]
+    inputRange: [index - 1, index, index + 1],
+    outputRange: [height, 0, 0]
   });
 
   return {
@@ -54277,7 +54920,6 @@ function forFadeFromBottomAndroid(props) {
 
   var index = scene.index;
   var inputRange = [index - 1, index, index + 0.99, index + 1];
-  var height = layout.initHeight;
 
   var opacity = position.interpolate({
     inputRange: inputRange,
@@ -54296,7 +54938,7 @@ function forFadeFromBottomAndroid(props) {
   };
 }
 
-function canUseNativeDriver(isVertical) {
+function canUseNativeDriver() {
   return true;
 }
 
@@ -54307,63 +54949,6 @@ exports.default = {
   canUseNativeDriver: canUseNativeDriver
 };
 }, 478, null, "react-navigation/src/views/CardStackStyleInterpolator.js");
-__d(/* react-navigation/src/views/HeaderStyleInterpolator.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _reactNative = require(46            ); // 46 = react-native
-
-function forLeft(props) {
-  var position = props.position,
-      scene = props.scene;
-  var index = scene.index;
-
-  return {
-    opacity: position.interpolate({
-      inputRange: [index - 1, index, index + 1],
-      outputRange: [0, 1, 0]
-    })
-  };
-}
-
-function forCenter(props) {
-  var position = props.position,
-      scene = props.scene;
-  var index = scene.index;
-
-  return {
-    opacity: position.interpolate({
-      inputRange: [index - 1, index, index + 1],
-      outputRange: [0, 1, 0]
-    }),
-    transform: [{
-      translateX: position.interpolate({
-        inputRange: [index - 1, index + 1],
-        outputRange: _reactNative.I18nManager.isRTL ? [-200, 200] : [200, -200]
-      })
-    }]
-  };
-}
-
-function forRight(props) {
-  var position = props.position,
-      scene = props.scene;
-  var index = scene.index;
-
-  return {
-    opacity: position.interpolate({
-      inputRange: [index - 1, index, index + 1],
-      outputRange: [0, 1, 0]
-    })
-  };
-}
-
-exports.default = {
-  forLeft: forLeft,
-  forCenter: forCenter,
-  forRight: forRight
-};
-}, 479, null, "react-navigation/src/views/HeaderStyleInterpolator.js");
 __d(/* react-navigation/src/views/Transitioner.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -54478,7 +55063,10 @@ var Transitioner = function (_React$Component) {
 
       delete transitionSpec.timing;
 
-      var animations = indexHasChanged ? [timing(progress, babelHelpers.extends({}, transitionSpec, {
+      var toValue = nextProps.navigation.state.index;
+      var positionHasChanged = position.__getValue() !== toValue;
+
+      var animations = indexHasChanged && positionHasChanged ? [timing(progress, babelHelpers.extends({}, transitionSpec, {
         toValue: 1
       })), timing(position, babelHelpers.extends({}, transitionSpec, {
         toValue: nextProps.navigation.state.index
@@ -54495,10 +55083,7 @@ var Transitioner = function (_React$Component) {
     value: function render() {
       return _react2.default.createElement(
         _reactNative.View,
-        {
-          onLayout: this._onLayout,
-          style: [styles.main, this.props.style]
-        },
+        { onLayout: this._onLayout, style: [styles.main, this.props.style] },
         this.props.render(this._transitionProps, this._prevTransitionProps)
       );
     }
@@ -54750,526 +55335,6 @@ function ScenesReducer(scenes, nextState, prevState) {
   return scenes;
 }
 }, 481, null, "react-navigation/src/views/ScenesReducer.js");
-__d(/* react-navigation/src/views/Header.js */function(global, require, module, exports) {
-
-'no babel-plugin-flow-react-proptypes';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _react = require(13     ); // 13 = react
-
-var _react2 = babelHelpers.interopRequireDefault(_react);
-
-var _reactNative = require(46            ); // 46 = react-native
-
-var _HeaderTitle = require(483            ); // 483 = ./HeaderTitle
-
-var _HeaderTitle2 = babelHelpers.interopRequireDefault(_HeaderTitle);
-
-var _HeaderBackButton = require(484                 ); // 484 = ./HeaderBackButton
-
-var _HeaderBackButton2 = babelHelpers.interopRequireDefault(_HeaderBackButton);
-
-var _HeaderStyleInterpolator = require(479                        ); // 479 = ./HeaderStyleInterpolator
-
-var _HeaderStyleInterpolator2 = babelHelpers.interopRequireDefault(_HeaderStyleInterpolator);
-
-var APPBAR_HEIGHT = _reactNative.Platform.OS === 'ios' ? 44 : 56;
-var STATUSBAR_HEIGHT = _reactNative.Platform.OS === 'ios' ? 20 : 0;
-var TITLE_OFFSET = _reactNative.Platform.OS === 'ios' ? 70 : 40;
-
-var Header = function (_React$PureComponent) {
-  babelHelpers.inherits(Header, _React$PureComponent);
-
-  function Header() {
-    var _ref;
-
-    var _temp, _this, _ret;
-
-    babelHelpers.classCallCheck(this, Header);
-
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = Header.__proto__ || Object.getPrototypeOf(Header)).call.apply(_ref, [this].concat(args))), _this), _this.state = {
-      widths: {}
-    }, _this._renderTitleComponent = function (props) {
-      var details = _this.props.getScreenDetails(props.scene);
-      var headerTitle = details.options.headerTitle;
-      if (headerTitle && typeof headerTitle !== 'string') {
-        return headerTitle;
-      }
-      var titleString = _this._getHeaderTitleString(props.scene);
-
-      var titleStyle = details.options.headerTitleStyle;
-      var color = details.options.headerTintColor;
-
-      var onLayoutIOS = _reactNative.Platform.OS === 'ios' ? function (e) {
-        _this.setState({
-          widths: babelHelpers.extends({}, _this.state.widths, babelHelpers.defineProperty({}, props.scene.key, e.nativeEvent.layout.width))
-        });
-      } : undefined;
-
-      return _react2.default.createElement(
-        _HeaderTitle2.default,
-        {
-          onLayout: onLayoutIOS,
-          style: [color ? { color: color } : null, titleStyle]
-        },
-        titleString
-      );
-    }, _this._renderLeftComponent = function (props) {
-      var options = _this.props.getScreenDetails(props.scene).options;
-      if (typeof options.headerLeft !== 'undefined') {
-        return options.headerLeft;
-      }
-      if (props.scene.index === 0) {
-        return null;
-      }
-      var backButtonTitle = _this._getBackButtonTitleString(props.scene);
-      var width = _this.state.widths[props.scene.key] ? (_this.props.layout.initWidth - _this.state.widths[props.scene.key]) / 2 : undefined;
-      return _react2.default.createElement(_HeaderBackButton2.default, {
-        onPress: function onPress() {
-          _this.props.navigation.goBack(null);
-        },
-        pressColorAndroid: options.headerPressColorAndroid,
-        tintColor: options.headerTintColor,
-        title: backButtonTitle,
-        width: width
-      });
-    }, _this._renderRightComponent = function (props) {
-      var details = _this.props.getScreenDetails(props.scene);
-      var headerRight = details.options.headerRight;
-
-      return headerRight || null;
-    }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
-  }
-
-  babelHelpers.createClass(Header, [{
-    key: '_getHeaderTitleString',
-    value: function _getHeaderTitleString(scene) {
-      var sceneOptions = this.props.getScreenDetails(scene).options;
-      if (typeof sceneOptions.headerTitle === 'string') {
-        return sceneOptions.headerTitle;
-      }
-      return sceneOptions.title;
-    }
-  }, {
-    key: '_getBackButtonTitleString',
-    value: function _getBackButtonTitleString(scene) {
-      var lastScene = this.props.scenes.find(function (s) {
-        return s.index === scene.index - 1;
-      });
-      if (!lastScene) {
-        return null;
-      }
-      var headerBackTitle = this.props.getScreenDetails(lastScene).options.headerBackTitle;
-
-      if (headerBackTitle || headerBackTitle === null) {
-        return headerBackTitle;
-      }
-      return this._getHeaderTitleString(lastScene);
-    }
-  }, {
-    key: '_renderLeft',
-    value: function _renderLeft(props) {
-      return this._renderSubView(props, 'left', this._renderLeftComponent, _HeaderStyleInterpolator2.default.forLeft);
-    }
-  }, {
-    key: '_renderTitle',
-    value: function _renderTitle(props, options) {
-      var style = {};
-
-      if (_reactNative.Platform.OS === 'android') {
-        if (!options.hasLeftComponent) {
-          style.left = 0;
-        }
-        if (!options.hasRightComponent) {
-          style.right = 0;
-        }
-      }
-
-      return this._renderSubView(babelHelpers.extends({}, props, { style: style }), 'title', this._renderTitleComponent, _HeaderStyleInterpolator2.default.forCenter);
-    }
-  }, {
-    key: '_renderRight',
-    value: function _renderRight(props) {
-      return this._renderSubView(props, 'right', this._renderRightComponent, _HeaderStyleInterpolator2.default.forRight);
-    }
-  }, {
-    key: '_renderSubView',
-    value: function _renderSubView(props, name, renderer, styleInterpolator) {
-      var scene = props.scene;
-      var index = scene.index,
-          isStale = scene.isStale,
-          key = scene.key;
-
-
-      var offset = this.props.navigation.state.index - index;
-
-      if (Math.abs(offset) > 2) {
-        return null;
-      }
-
-      var subView = renderer(props);
-
-      if (subView == null) {
-        return null;
-      }
-
-      var pointerEvents = offset !== 0 || isStale ? 'none' : 'box-none';
-
-      return _react2.default.createElement(
-        _reactNative.Animated.View,
-        {
-          pointerEvents: pointerEvents,
-          key: name + '_' + key,
-          style: [styles.item, styles[name], props.style, styleInterpolator(babelHelpers.extends({}, this.props, props))]
-        },
-        subView
-      );
-    }
-  }, {
-    key: '_renderHeader',
-    value: function _renderHeader(props) {
-      var left = this._renderLeft(props);
-      var right = this._renderRight(props);
-      var title = this._renderTitle(props, {
-        hasLeftComponent: !!left,
-        hasRightComponent: !!right
-      });
-
-      return _react2.default.createElement(
-        _reactNative.View,
-        {
-          style: [_reactNative.StyleSheet.absoluteFill, styles.header],
-          key: 'scene_' + props.scene.key
-        },
-        title,
-        left,
-        right
-      );
-    }
-  }, {
-    key: 'render',
-    value: function render() {
-      var _this2 = this;
-
-      var appBar = void 0;
-
-      if (this.props.mode === 'float') {
-        var scenesProps = this.props.scenes.map(function (scene) {
-          return {
-            position: _this2.props.position,
-            progress: _this2.props.progress,
-            scene: scene
-          };
-        });
-        appBar = scenesProps.map(this._renderHeader, this);
-      } else {
-        appBar = this._renderHeader({
-          position: new _reactNative.Animated.Value(this.props.scene.index),
-          progress: new _reactNative.Animated.Value(0),
-          scene: this.props.scene
-        });
-      }
-
-      var _props = this.props,
-          scenes = _props.scenes,
-          scene = _props.scene,
-          position = _props.position,
-          screenProps = _props.screenProps,
-          progress = _props.progress,
-          rest = babelHelpers.objectWithoutProperties(_props, ['scenes', 'scene', 'position', 'screenProps', 'progress']);
-
-      var _props$getScreenDetai = this.props.getScreenDetails(scene, screenProps),
-          options = _props$getScreenDetai.options;
-
-      var style = options.headerStyle;
-
-      return _react2.default.createElement(
-        _reactNative.Animated.View,
-        babelHelpers.extends({}, rest, { style: [styles.container, style] }),
-        _react2.default.createElement(
-          _reactNative.View,
-          { style: styles.appBar },
-          appBar
-        )
-      );
-    }
-  }]);
-  return Header;
-}(_react2.default.PureComponent);
-
-Header.HEIGHT = APPBAR_HEIGHT + STATUSBAR_HEIGHT;
-Header.Title = _HeaderTitle2.default;
-Header.BackButton = _HeaderBackButton2.default;
-
-
-var styles = _reactNative.StyleSheet.create({
-  container: {
-    paddingTop: STATUSBAR_HEIGHT,
-    backgroundColor: _reactNative.Platform.OS === 'ios' ? '#EFEFF2' : '#FFF',
-    height: STATUSBAR_HEIGHT + APPBAR_HEIGHT,
-    shadowColor: 'black',
-    shadowOpacity: 0.1,
-    shadowRadius: _reactNative.StyleSheet.hairlineWidth,
-    shadowOffset: {
-      height: _reactNative.StyleSheet.hairlineWidth
-    },
-    elevation: 4
-  },
-  appBar: {
-    flex: 1
-  },
-  header: {
-    flexDirection: 'row'
-  },
-  item: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent'
-  },
-  title: {
-    bottom: 0,
-    left: TITLE_OFFSET,
-    right: TITLE_OFFSET,
-    top: 0,
-    position: 'absolute',
-    alignItems: _reactNative.Platform.OS === 'ios' ? 'center' : 'flex-start'
-  },
-  left: {
-    left: 0,
-    bottom: 0,
-    top: 0,
-    position: 'absolute'
-  },
-  right: {
-    right: 0,
-    bottom: 0,
-    top: 0,
-    position: 'absolute'
-  }
-});
-
-exports.default = Header;
-}, 482, null, "react-navigation/src/views/Header.js");
-__d(/* react-navigation/src/views/HeaderTitle.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _react = require(13     ); // 13 = react
-
-var _react2 = babelHelpers.interopRequireDefault(_react);
-
-var _reactNative = require(46            ); // 46 = react-native
-
-var HeaderTitle = function HeaderTitle(_ref) {
-  var style = _ref.style,
-      rest = babelHelpers.objectWithoutProperties(_ref, ['style']);
-  return _react2.default.createElement(_reactNative.Text, babelHelpers.extends({ numberOfLines: 1 }, rest, { style: [styles.title, style], accessibilityTraits: 'header' }));
-};
-
-var styles = _reactNative.StyleSheet.create({
-  title: {
-    fontSize: _reactNative.Platform.OS === 'ios' ? 17 : 18,
-    fontWeight: _reactNative.Platform.OS === 'ios' ? '600' : '500',
-    color: 'rgba(0, 0, 0, .9)',
-    textAlign: _reactNative.Platform.OS === 'ios' ? 'center' : 'left',
-    marginHorizontal: 16
-  }
-});
-
-exports.default = HeaderTitle;
-}, 483, null, "react-navigation/src/views/HeaderTitle.js");
-__d(/* react-navigation/src/views/HeaderBackButton.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _react = require(13     ); // 13 = react
-
-var _react2 = babelHelpers.interopRequireDefault(_react);
-
-var _reactNative = require(46            ); // 46 = react-native
-
-var _TouchableItem = require(485              ); // 485 = ./TouchableItem
-
-var _TouchableItem2 = babelHelpers.interopRequireDefault(_TouchableItem);
-
-var HeaderBackButton = function (_React$PureComponent) {
-  babelHelpers.inherits(HeaderBackButton, _React$PureComponent);
-
-  function HeaderBackButton() {
-    var _ref;
-
-    var _temp, _this, _ret;
-
-    babelHelpers.classCallCheck(this, HeaderBackButton);
-
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = HeaderBackButton.__proto__ || Object.getPrototypeOf(HeaderBackButton)).call.apply(_ref, [this].concat(args))), _this), _this.state = {}, _this._onTextLayout = function (e) {
-      if (_this.state.initialTextWidth) {
-        return;
-      }
-      _this.setState({
-        initialTextWidth: e.nativeEvent.layout.x + e.nativeEvent.layout.width
-      });
-    }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
-  }
-
-  babelHelpers.createClass(HeaderBackButton, [{
-    key: 'render',
-    value: function render() {
-      var _props = this.props,
-          onPress = _props.onPress,
-          pressColorAndroid = _props.pressColorAndroid,
-          width = _props.width,
-          title = _props.title,
-          tintColor = _props.tintColor,
-          truncatedTitle = _props.truncatedTitle;
-
-
-      var renderTruncated = this.state.initialTextWidth && width ? this.state.initialTextWidth > width : false;
-
-      return _react2.default.createElement(
-        _TouchableItem2.default,
-        {
-          delayPressIn: 0,
-          onPress: onPress,
-          pressColor: pressColorAndroid,
-          style: styles.container,
-          borderless: true
-        },
-        _react2.default.createElement(
-          _reactNative.View,
-          { style: styles.container },
-          _react2.default.createElement(_reactNative.Image, {
-            style: [styles.icon, title && styles.iconWithTitle, { tintColor: tintColor }],
-            source: require(486                     ) // 486 = ./assets/back-icon.png
-          }),
-          _reactNative.Platform.OS === 'ios' && title && _react2.default.createElement(
-            _reactNative.Text,
-            {
-              onLayout: this._onTextLayout,
-              style: [styles.title, { color: tintColor }],
-              numberOfLines: 1
-            },
-            renderTruncated ? truncatedTitle : title
-          )
-        )
-      );
-    }
-  }]);
-  return HeaderBackButton;
-}(_react2.default.PureComponent);
-
-HeaderBackButton.defaultProps = {
-  pressColorAndroid: 'rgba(0, 0, 0, .32)',
-  tintColor: _reactNative.Platform.select({
-    ios: '#037aff'
-  }),
-  truncatedTitle: 'Back'
-};
-
-
-var styles = _reactNative.StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    backgroundColor: 'transparent'
-  },
-  title: {
-    fontSize: 17,
-    paddingRight: 10
-  },
-  icon: _reactNative.Platform.OS === 'ios' ? {
-    height: 20,
-    width: 12,
-    marginLeft: 10,
-    marginRight: 22,
-    marginVertical: 12,
-    resizeMode: 'contain',
-    transform: [{ scaleX: _reactNative.I18nManager.isRTL ? -1 : 1 }]
-  } : {
-    height: 24,
-    width: 24,
-    margin: 16,
-    resizeMode: 'contain',
-    transform: [{ scaleX: _reactNative.I18nManager.isRTL ? -1 : 1 }]
-  },
-  iconWithTitle: _reactNative.Platform.OS === 'ios' ? {
-    marginRight: 5
-  } : {}
-});
-
-exports.default = HeaderBackButton;
-}, 484, null, "react-navigation/src/views/HeaderBackButton.js");
-__d(/* react-navigation/src/views/TouchableItem.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _react = require(13     ); // 13 = react
-
-var _react2 = babelHelpers.interopRequireDefault(_react);
-
-var _reactNative = require(46            ); // 46 = react-native
-
-var ANDROID_VERSION_LOLLIPOP = 21;
-
-var TouchableItem = function (_Component) {
-  babelHelpers.inherits(TouchableItem, _Component);
-
-  function TouchableItem() {
-    babelHelpers.classCallCheck(this, TouchableItem);
-    return babelHelpers.possibleConstructorReturn(this, (TouchableItem.__proto__ || Object.getPrototypeOf(TouchableItem)).apply(this, arguments));
-  }
-
-  babelHelpers.createClass(TouchableItem, [{
-    key: 'render',
-    value: function render() {
-      if (_reactNative.Platform.OS === 'android' && _reactNative.Platform.Version >= ANDROID_VERSION_LOLLIPOP) {
-        var _props = this.props,
-            _style = _props.style,
-            rest = babelHelpers.objectWithoutProperties(_props, ['style']);
-
-
-        return _react2.default.createElement(
-          _reactNative.TouchableNativeFeedback,
-          babelHelpers.extends({}, rest, {
-            style: null,
-            background: _reactNative.TouchableNativeFeedback.Ripple(this.props.pressColor, this.props.borderless)
-          }),
-          _react2.default.createElement(
-            _reactNative.View,
-            { style: this.props.style },
-            _react.Children.only(this.props.children)
-          )
-        );
-      }
-
-      return _react2.default.createElement(
-        _reactNative.TouchableOpacity,
-        this.props,
-        this.props.children
-      );
-    }
-  }]);
-  return TouchableItem;
-}(_react.Component);
-
-TouchableItem.defaultProps = {
-  pressColor: 'rgba(0, 0, 0, .32)'
-};
-exports.default = TouchableItem;
-}, 485, null, "react-navigation/src/views/TouchableItem.js");
-__d(/* react-navigation/src/views/assets/back-icon.png */function(global, require, module, exports) {module.exports = require(240                                         ).registerAsset({"__packager_asset":true,"httpServerLocation":"/assets/node_modules/react-navigation/src/views/assets","width":13,"height":21,"scales":[1,1.5,2,3,4],"hash":"4bb8d26cef10f7806299143d3e6ff20d","name":"back-icon","type":"png"}); // 240 = react-native/Libraries/Image/AssetRegistry
-}, 486, null, "react-navigation/src/views/assets/back-icon.png");
 __d(/* react-navigation/src/routers/StackRouter.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -55336,7 +55401,7 @@ exports.default = function (routeConfigs) {
   routeNames.forEach(function (routeName) {
     var pathPattern = paths[routeName] || routeConfigs[routeName].path;
     var matchExact = !!pathPattern && !childRouters[routeName];
-    if (!pathPattern) {
+    if (typeof pathPattern !== 'string') {
       pathPattern = routeName;
     }
     var keys = [];
@@ -55346,7 +55411,7 @@ exports.default = function (routeConfigs) {
       re = new RegExp('(?:' + re.source + ')|(?:' + wildcardRe.source + ')');
     }
 
-    paths[routeName] = { re: re, keys: keys };
+    paths[routeName] = { re: re, keys: keys, toPath: _pathToRegexp2.default.compile(pathPattern) };
   });
 
   return {
@@ -55362,8 +55427,8 @@ exports.default = function (routeConfigs) {
     getComponentForRouteName: function getComponentForRouteName(routeName) {
       return (0, _getScreenForRouteName2.default)(routeConfigs, routeName);
     },
-    getStateForAction: function getStateForAction(action, state) {
-      action = _NavigationActions2.default.mapDeprecatedActionAndWarn(action);
+    getStateForAction: function getStateForAction(passedAction, state) {
+      var action = _NavigationActions2.default.mapDeprecatedActionAndWarn(passedAction);
 
       if (!state) {
         var route = {};
@@ -55372,7 +55437,7 @@ exports.default = function (routeConfigs) {
             index: 0,
             routes: [babelHelpers.extends({}, action, {
               type: undefined,
-              key: 'Init'
+              key: 'Init-' + _getUuid()
             })]
           };
         }
@@ -55382,11 +55447,12 @@ exports.default = function (routeConfigs) {
             params: initialRouteParams
           }));
         }
-        var _params = (route.params || action.params || initialRouteParams) && babelHelpers.extends({}, route.params || {}, action.params || {}, initialRouteParams || {});
+        var params = (route.params || action.params || initialRouteParams) && babelHelpers.extends({}, route.params || {}, action.params || {}, initialRouteParams || {});
         route = babelHelpers.extends({}, route, {
           routeName: initialRouteName,
-          key: 'Init'
-        }, _params ? { params: _params } : {});
+          key: 'Init-' + _getUuid()
+        }, params ? { params: params } : {});
+
         state = {
           index: 0,
           routes: [route]
@@ -55460,10 +55526,10 @@ exports.default = function (routeConfigs) {
           return route.key === action.key;
         });
         if (lastRoute) {
-          var _params2 = babelHelpers.extends({}, lastRoute.params, action.params);
+          var _params = babelHelpers.extends({}, lastRoute.params, action.params);
           var routes = [].concat(babelHelpers.toConsumableArray(state.routes));
           routes[state.routes.indexOf(lastRoute)] = babelHelpers.extends({}, lastRoute, {
-            params: _params2
+            params: _params
           });
           return babelHelpers.extends({}, state, {
             routes: routes
@@ -55475,16 +55541,16 @@ exports.default = function (routeConfigs) {
         var resetAction = action;
 
         return babelHelpers.extends({}, state, {
-          routes: resetAction.actions.map(function (action, index) {
-            var router = childRouters[action.routeName];
+          routes: resetAction.actions.map(function (childAction) {
+            var router = childRouters[childAction.routeName];
             if (router) {
-              return babelHelpers.extends({}, action, router.getStateForAction(action), {
-                routeName: action.routeName,
-                key: 'Init' + index
+              return babelHelpers.extends({}, childAction, router.getStateForAction(childAction), {
+                routeName: childAction.routeName,
+                key: _getUuid()
               });
             }
-            var route = babelHelpers.extends({}, action, {
-              key: 'Init' + index
+            var route = babelHelpers.extends({}, childAction, {
+              key: _getUuid()
             });
             delete route.type;
             return route;
@@ -55515,8 +55581,21 @@ exports.default = function (routeConfigs) {
       return state;
     },
     getPathAndParamsForState: function getPathAndParamsForState(state) {
+      var route = state.routes[state.index];
+      var routeName = route.routeName;
+      var screen = (0, _getScreenForRouteName2.default)(routeConfigs, routeName);
+
+      var subPath = paths[routeName].toPath(route.params);
+      var path = subPath;
+      var params = route.params;
+      if (screen && screen.router) {
+        var child = screen.router.getPathAndParamsForState(route);
+        path = subPath ? subPath + '/' + child.path : child.path;
+        params = child.params ? babelHelpers.extends({}, params, child.params) : params;
+      }
       return {
-        path: ''
+        path: path,
+        params: params
       };
     },
     getActionForPathAndParams: function getActionForPathAndParams(pathToResolve) {
@@ -55535,10 +55614,26 @@ exports.default = function (routeConfigs) {
       var pathMatch = void 0;
       var pathMatchKeys = void 0;
 
-      for (var routeName in paths) {
-        var _paths$routeName = paths[routeName],
-            re = _paths$routeName.re,
-            keys = _paths$routeName.keys;
+      for (var _iterator = Object.entries(paths), _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[typeof Symbol === 'function' ? Symbol.iterator : '@@iterator']();;) {
+        var _ref3;
+
+        if (_isArray) {
+          if (_i >= _iterator.length) break;
+          _ref3 = _iterator[_i++];
+        } else {
+          _i = _iterator.next();
+          if (_i.done) break;
+          _ref3 = _i.value;
+        }
+
+        var _ref = _ref3;
+
+        var _ref2 = babelHelpers.slicedToArray(_ref, 2);
+
+        var routeName = _ref2[0];
+        var path = _ref2[1];
+        var re = path.re,
+            keys = path.keys;
 
         pathMatch = re.exec(pathNameToResolve);
         if (pathMatch && pathMatch.length) {
@@ -56008,7 +56103,7 @@ var _invariant = require(23                  ); // 23 = fbjs/lib/invariant
 
 var _invariant2 = babelHelpers.interopRequireDefault(_invariant);
 
-var deprecatedKeys = ['tabBar', 'header'];
+var deprecatedKeys = ['tabBar'];
 
 exports.default = function (screenOptions, route) {
   var keys = Object.keys(screenOptions);
@@ -56049,14 +56144,14 @@ function validateRouteConfigMap(routeConfigs) {
   routeNames.forEach(function (routeName) {
     var routeConfig = routeConfigs[routeName];
 
-    (0, _invariant2.default)(routeConfig.screen || routeConfig.getScreen, 'Route \'' + routeName + '\' should declare a screen. ' + 'For example:\n\n' + 'import MyScreen from \'./MyScreen\';\n' + '...\n' + (routeName + ': {\n') + '  screen: MyScreen,\n' + '}');
+    (0, _invariant2.default)(routeConfig.screen || routeConfig.getScreen, 'Route \'' + routeName + '\' should declare a screen. ' + 'For example:\n\n' + "import MyScreen from './MyScreen';\n" + '...\n' + (routeName + ': {\n') + '  screen: MyScreen,\n' + '}');
 
     if (routeConfig.screen && routeConfig.getScreen) {
       (0, _invariant2.default)(false, 'Route \'' + routeName + '\' should declare a screen or ' + 'a getScreen, not both.');
     }
 
     if (routeConfig.screen) {
-      (0, _invariant2.default)(typeof routeConfig.screen === 'function', 'The component for route \'' + routeName + '\' must be a ' + 'a React component. For example:\n\n' + 'import MyScreen from \'./MyScreen\';\n' + '...\n' + (routeName + ': {\n') + '  screen: MyScreen,\n' + '}\n\n' + 'You can also use a navigator:\n\n' + 'import MyNavigator from \'./MyNavigator\';\n' + '...\n' + (routeName + ': {\n') + '  screen: MyNavigator,\n' + '}');
+      (0, _invariant2.default)(typeof routeConfig.screen === 'function', 'The component for route \'' + routeName + '\' must be a ' + 'a React component. For example:\n\n' + "import MyScreen from './MyScreen';\n" + '...\n' + (routeName + ': {\n') + '  screen: MyScreen,\n' + '}\n\n' + 'You can also use a navigator:\n\n' + "import MyNavigator from './MyNavigator';\n" + '...\n' + (routeName + ': {\n') + '  screen: MyNavigator,\n' + '}');
     }
   });
 }
@@ -56116,6 +56211,14 @@ var _TabView = require(498                       ); // 498 = ../views/TabView/Ta
 
 var _TabView2 = babelHelpers.interopRequireDefault(_TabView);
 
+var _TabBarTop = require(509                         ); // 509 = ../views/TabView/TabBarTop
+
+var _TabBarTop2 = babelHelpers.interopRequireDefault(_TabBarTop);
+
+var _TabBarBottom = require(511                            ); // 511 = ../views/TabView/TabBarBottom
+
+var _TabBarBottom2 = babelHelpers.interopRequireDefault(_TabBarBottom);
+
 var _NavigatorTypes = require(495               ); // 495 = ./NavigatorTypes
 
 var _NavigatorTypes2 = babelHelpers.interopRequireDefault(_NavigatorTypes);
@@ -56129,11 +56232,12 @@ var TabNavigator = function TabNavigator(routeConfigs) {
       tabBarOptions = mergedConfig.tabBarOptions,
       swipeEnabled = mergedConfig.swipeEnabled,
       animationEnabled = mergedConfig.animationEnabled,
-      lazyLoad = mergedConfig.lazyLoad,
-      tabsConfig = babelHelpers.objectWithoutProperties(mergedConfig, ['tabBarComponent', 'tabBarPosition', 'tabBarOptions', 'swipeEnabled', 'animationEnabled', 'lazyLoad']);
+      lazy = mergedConfig.lazy,
+      tabsConfig = babelHelpers.objectWithoutProperties(mergedConfig, ['tabBarComponent', 'tabBarPosition', 'tabBarOptions', 'swipeEnabled', 'animationEnabled', 'lazy']);
 
 
   var router = (0, _TabRouter2.default)(routeConfigs, tabsConfig);
+
   var navigator = (0, _createNavigator2.default)(router, routeConfigs, config, _NavigatorTypes2.default.STACK)(function (props) {
     return _react2.default.createElement(_TabView2.default, babelHelpers.extends({}, props, {
       tabBarComponent: tabBarComponent,
@@ -56141,7 +56245,7 @@ var TabNavigator = function TabNavigator(routeConfigs) {
       tabBarOptions: tabBarOptions,
       swipeEnabled: swipeEnabled,
       animationEnabled: animationEnabled,
-      lazyLoad: lazyLoad
+      lazy: lazy
     }));
   });
 
@@ -56150,18 +56254,18 @@ var TabNavigator = function TabNavigator(routeConfigs) {
 
 var Presets = {
   iOSBottomTabs: {
-    tabBarComponent: _TabView2.default.TabBarBottom,
+    tabBarComponent: _TabBarBottom2.default,
     tabBarPosition: 'bottom',
     swipeEnabled: false,
     animationEnabled: false,
-    lazyLoad: false
+    lazy: false
   },
   AndroidTopTabs: {
-    tabBarComponent: _TabView2.default.TabBarTop,
+    tabBarComponent: _TabBarTop2.default,
     tabBarPosition: 'top',
     swipeEnabled: true,
     animationEnabled: true,
-    lazyLoad: false
+    lazy: false
   }
 };
 
@@ -56450,15 +56554,7 @@ var _react2 = babelHelpers.interopRequireDefault(_react);
 
 var _reactNative = require(46            ); // 46 = react-native
 
-var _reactNativeTabView = require(499                    ); // 499 = react-native-tab-view
-
-var _TabBarTop = require(509          ); // 509 = ./TabBarTop
-
-var _TabBarTop2 = babelHelpers.interopRequireDefault(_TabBarTop);
-
-var _TabBarBottom = require(511             ); // 511 = ./TabBarBottom
-
-var _TabBarBottom2 = babelHelpers.interopRequireDefault(_TabBarBottom);
+var _reactNativeTabView = require(751                    ); // 751 = react-native-tab-view
 
 var _SceneView = require(475           ); // 475 = ../SceneView
 
@@ -56467,19 +56563,6 @@ var _SceneView2 = babelHelpers.interopRequireDefault(_SceneView);
 var _withCachedChildNavigation = require(512                              ); // 512 = ../../withCachedChildNavigation
 
 var _withCachedChildNavigation2 = babelHelpers.interopRequireDefault(_withCachedChildNavigation);
-
-var TabViewPager = void 0;
-
-switch (_reactNative.Platform.OS) {
-  case 'android':
-    TabViewPager = _reactNativeTabView.TabViewPagerAndroid;
-    break;
-  case 'ios':
-    TabViewPager = _reactNativeTabView.TabViewPagerScroll;
-    break;
-  default:
-    TabViewPager = _reactNativeTabView.TabViewPagerPan;
-}
 
 var TabView = function (_PureComponent) {
   babelHelpers.inherits(TabView, _PureComponent);
@@ -56505,21 +56588,24 @@ var TabView = function (_PureComponent) {
 
       var childNavigation = _this.props.childNavigationProps[route.key];
       var TabComponent = _this.props.router.getComponentForRouteName(route.routeName);
-      return _react2.default.createElement(_SceneView2.default, {
-        screenProps: screenProps,
-        component: TabComponent,
-        navigation: childNavigation,
-        navigationOptions: _this.props.router.getScreenOptions(childNavigation, screenProps)
-      });
+      return _react2.default.createElement(
+        _reactNative.View,
+        { style: styles.page },
+        _react2.default.createElement(_SceneView2.default, {
+          screenProps: screenProps,
+          component: TabComponent,
+          navigation: childNavigation
+        })
+      );
     }, _this._getLabel = function (_ref3) {
-      var focused = _ref3.focused,
-          route = _ref3.route,
-          tintColor = _ref3.tintColor;
+      var route = _ref3.route,
+          tintColor = _ref3.tintColor,
+          focused = _ref3.focused;
 
       var options = _this.props.router.getScreenOptions(_this.props.childNavigationProps[route.key], _this.props.screenProps || {});
 
       if (options.tabBarLabel) {
-        return options.tabBarLabel;
+        return typeof options.tabBarLabel === 'function' ? options.tabBarLabel({ tintColor: tintColor, focused: focused }) : options.tabBarLabel;
       }
 
       if (typeof options.title === 'string') {
@@ -56553,17 +56639,7 @@ var TabView = function (_PureComponent) {
         animationEnabled: animationEnabled
       }));
     }, _this._renderPager = function (props) {
-      var _this$props2 = _this.props,
-          swipeEnabled = _this$props2.swipeEnabled,
-          animationEnabled = _this$props2.animationEnabled;
-
-
-      return _react2.default.createElement(TabViewPager, babelHelpers.extends({}, props, {
-        swipeEnabled: swipeEnabled,
-        animationEnabled: animationEnabled
-      }));
-    }, _this._configureTransition = function () {
-      return null;
+      return _react2.default.createElement(_reactNativeTabView.TabViewPagerPan, props);
     }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
   }
 
@@ -56572,16 +56648,17 @@ var TabView = function (_PureComponent) {
     value: function render() {
       var _props = this.props,
           router = _props.router,
-          navigation = _props.navigation,
           tabBarComponent = _props.tabBarComponent,
           tabBarPosition = _props.tabBarPosition,
           animationEnabled = _props.animationEnabled,
-          lazyLoad = _props.lazyLoad,
+          swipeEnabled = _props.swipeEnabled,
+          lazy = _props.lazy,
           screenProps = _props.screenProps;
 
 
       var renderHeader = void 0;
       var renderFooter = void 0;
+      var renderPager = void 0;
 
       var state = this.props.navigation.state;
 
@@ -56597,67 +56674,67 @@ var TabView = function (_PureComponent) {
         }
       }
 
-      var configureTransition = void 0;
-
-      if (animationEnabled === false) {
-        configureTransition = this._configureTransition;
+      if (animationEnabled === false && swipeEnabled === false) {
+        renderPager = this._renderPager;
       }
 
-      return _react2.default.createElement(_reactNativeTabView.TabViewAnimated, {
-        style: styles.container,
-        navigationState: this.props.navigation.state,
-        lazy: lazyLoad,
+      var props = {
+        lazy: lazy,
+        animationEnabled: animationEnabled,
+        swipeEnabled: swipeEnabled,
+        renderPager: renderPager,
         renderHeader: renderHeader,
         renderFooter: renderFooter,
         renderScene: this._renderScene,
-        renderPager: this._renderPager,
-        configureTransition: configureTransition,
         onRequestChangeTab: this._handlePageChanged,
-        screenProps: this.props.screenProps
-      });
+        navigationState: this.props.navigation.state,
+        screenProps: this.props.screenProps,
+        style: styles.container
+      };
+
+      return _react2.default.createElement(_reactNativeTabView.TabViewAnimated, props);
     }
   }]);
   return TabView;
 }(_react.PureComponent);
 
-TabView.TabBarTop = _TabBarTop2.default;
-TabView.TabBarBottom = _TabBarBottom2.default;
-
-
-var TabViewEnhanced = (0, _withCachedChildNavigation2.default)(TabView);
-
-TabViewEnhanced.TabBarTop = _TabBarTop2.default;
-TabViewEnhanced.TabBarBottom = _TabBarBottom2.default;
-
-exports.default = TabViewEnhanced;
+exports.default = (0, _withCachedChildNavigation2.default)(TabView);
 
 
 var styles = _reactNative.StyleSheet.create({
   container: {
     flex: 1
+  },
+
+  page: {
+    flex: 1,
+    overflow: 'hidden'
   }
 });
 }, 498, null, "react-navigation/src/views/TabView/TabView.js");
-__d(/* react-native-tab-view/index.js */function(global, require, module, exports) {
+__d(/* react-native-tab-view/src/index.js */function(global, require, module, exports) {
 
 module.exports = {
   get TabViewAnimated() {
-    return require(500                    ).default; // 500 = ./src/TabViewAnimated
+    return require(752                ).default; // 752 = ./TabViewAnimated
   },
   get TabViewPagerPan() {
-    return require(505                    ).default; // 505 = ./src/TabViewPagerPan
+    return require(756                ).default; // 756 = ./TabViewPagerPan
   },
   get TabViewPagerScroll() {
-    return require(504                       ).default; // 504 = ./src/TabViewPagerScroll
+    return require(755                   ).default; // 755 = ./TabViewPagerScroll
   },
   get TabViewPagerAndroid() {
-    return require(503                        ).default; // 503 = ./src/TabViewPagerAndroid
+    return require(754                    ).default; // 754 = ./TabViewPagerAndroid
   },
   get TabBar() {
-    return require(507           ).default; // 507 = ./src/TabBar
+    return require(757       ).default; // 757 = ./TabBar
+  },
+  get SceneMap() {
+    return require(759         ).default; // 759 = ./SceneMap
   }
 };
-}, 499, null, "react-native-tab-view/index.js");
+}, 751, null, "react-native-tab-view/src/index.js");
 __d(/* react-native-tab-view/src/TabViewAnimated.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -56666,32 +56743,25 @@ var _react = require(13     ); // 13 = react
 
 var _react2 = babelHelpers.interopRequireDefault(_react);
 
+var _propTypes = require(419         ); // 419 = prop-types
+
+var _propTypes2 = babelHelpers.interopRequireDefault(_propTypes);
+
 var _reactNative = require(46            ); // 46 = react-native
 
-var _TabViewTransitioner = require(501                    ); // 501 = ./TabViewTransitioner
-
-var _TabViewTransitioner2 = babelHelpers.interopRequireDefault(_TabViewTransitioner);
-
-var _TabViewPropTypes = require(502                 ); // 502 = ./TabViewPropTypes
-
-var styles = _reactNative.StyleSheet.create({
-  container: {
-    flex: 1,
-    overflow: 'hidden'
-  }
-});
+var _TabViewPropTypes = require(753                 ); // 753 = ./TabViewPropTypes
 
 var TabViewPager = void 0;
 
 switch (_reactNative.Platform.OS) {
   case 'android':
-    TabViewPager = require(503                    ).default; // 503 = ./TabViewPagerAndroid
+    TabViewPager = require(754                    ).default; // 754 = ./TabViewPagerAndroid
     break;
   case 'ios':
-    TabViewPager = require(504                   ).default; // 504 = ./TabViewPagerScroll
+    TabViewPager = require(755                   ).default; // 755 = ./TabViewPagerScroll
     break;
   default:
-    TabViewPager = require(505                ).default; // 505 = ./TabViewPagerPan
+    TabViewPager = require(756                ).default; // 756 = ./TabViewPagerPan
     break;
 }
 
@@ -56706,273 +56776,7 @@ var TabViewAnimated = function (_PureComponent) {
     _initialiseProps.call(_this);
 
     _this.state = {
-      loaded: [_this.props.navigationState.index]
-    };
-    return _this;
-  }
-
-  babelHelpers.createClass(TabViewAnimated, [{
-    key: 'render',
-    value: function render() {
-      return _react2.default.createElement(_TabViewTransitioner2.default, babelHelpers.extends({}, this.props, {
-        loaded: this.state.loaded,
-        onChangePosition: this._handleChangePosition,
-        render: this._renderItems
-      }));
-    }
-  }]);
-  return TabViewAnimated;
-}(_react.PureComponent);
-
-TabViewAnimated.propTypes = {
-  navigationState: _TabViewPropTypes.NavigationStatePropType.isRequired,
-  renderPager: _react.PropTypes.func.isRequired,
-  renderScene: _react.PropTypes.func.isRequired,
-  renderHeader: _react.PropTypes.func,
-  renderFooter: _react.PropTypes.func,
-  onChangePosition: _react.PropTypes.func,
-  lazy: _react.PropTypes.bool
-};
-TabViewAnimated.defaultProps = {
-  renderPager: function renderPager(props) {
-    return _react2.default.createElement(TabViewPager, props);
-  }
-};
-
-var _initialiseProps = function _initialiseProps() {
-  var _this2 = this;
-
-  this._renderScene = function (props) {
-    var _props = _this2.props,
-        renderScene = _props.renderScene,
-        navigationState = _props.navigationState,
-        lazy = _props.lazy;
-    var loaded = _this2.state.loaded;
-
-    if (lazy) {
-      if (loaded.includes(navigationState.routes.indexOf(props.route))) {
-        return renderScene(props);
-      }
-      return null;
-    }
-    return renderScene(props);
-  };
-
-  this._renderItems = function (props) {
-    var _props2 = _this2.props,
-        renderPager = _props2.renderPager,
-        renderHeader = _props2.renderHeader,
-        renderFooter = _props2.renderFooter;
-    var navigationState = props.navigationState;
-
-
-    return _react2.default.createElement(
-      _reactNative.View,
-      { style: styles.container },
-      renderHeader && renderHeader(props),
-      renderPager(babelHelpers.extends({}, props, {
-        children: navigationState.routes.map(function (route, index) {
-          return _this2._renderScene(babelHelpers.extends({}, props, {
-            route: route,
-            index: index,
-            focused: index === props.navigationState.index
-          }));
-        })
-      })),
-      renderFooter && renderFooter(props)
-    );
-  };
-
-  this._handleChangePosition = function (value) {
-    var _props3 = _this2.props,
-        onChangePosition = _props3.onChangePosition,
-        navigationState = _props3.navigationState,
-        lazy = _props3.lazy;
-
-    if (onChangePosition) {
-      onChangePosition(value);
-    }
-    var loaded = _this2.state.loaded;
-
-    if (lazy) {
-      var next = Math.ceil(value);
-      if (next === navigationState.index) {
-        next = Math.floor(value);
-      }
-      if (loaded.includes(next)) {
-        return;
-      }
-      _this2.setState({
-        loaded: [].concat(babelHelpers.toConsumableArray(loaded), [next])
-      });
-    }
-  };
-};
-
-exports.default = TabViewAnimated;
-}, 500, null, "react-native-tab-view/src/TabViewAnimated.js");
-__d(/* react-native-tab-view/src/TabViewTransitioner.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _react = require(13     ); // 13 = react
-
-var _react2 = babelHelpers.interopRequireDefault(_react);
-
-var _reactNative = require(46            ); // 46 = react-native
-
-var _TabViewPropTypes = require(502                 ); // 502 = ./TabViewPropTypes
-
-var DefaultTransitionSpec = {
-  timing: _reactNative.Animated.spring,
-  tension: 300,
-  friction: 35
-};
-
-var TabViewTransitioner = function (_PureComponent) {
-  babelHelpers.inherits(TabViewTransitioner, _PureComponent);
-
-  function TabViewTransitioner(props) {
-    babelHelpers.classCallCheck(this, TabViewTransitioner);
-
-    var _this = babelHelpers.possibleConstructorReturn(this, (TabViewTransitioner.__proto__ || Object.getPrototypeOf(TabViewTransitioner)).call(this, props));
-
-    _this._mounted = false;
-    _this._subscriptions = {};
-
-    _this._trackPosition = function (e) {
-      _this._triggerEvent('position', e.value);
-      _this._lastPosition = e.value;
-      var onChangePosition = _this.props.onChangePosition;
-
-      if (onChangePosition) {
-        onChangePosition(e.value);
-      }
-    };
-
-    _this._getLastPosition = function () {
-      if (typeof _this._lastPosition === 'number') {
-        return _this._lastPosition;
-      } else {
-        return _this.props.navigationState.index;
-      }
-    };
-
-    _this._handleLayout = function (e) {
-      var _e$nativeEvent$layout = e.nativeEvent.layout,
-          height = _e$nativeEvent$layout.height,
-          width = _e$nativeEvent$layout.width;
-
-
-      if (_this.state.layout.width === width && _this.state.layout.height === height) {
-        return;
-      }
-
-      _this.setState({
-        layout: {
-          measured: true,
-          height: height,
-          width: width
-        }
-      });
-    };
-
-    _this._buildSceneRendererProps = function () {
-      return {
-        layout: _this.state.layout,
-        navigationState: _this.props.navigationState,
-        position: _this.state.position,
-        jumpToIndex: _this._jumpToIndex,
-        getLastPosition: _this._getLastPosition,
-        subscribe: _this._addSubscription
-      };
-    };
-
-    _this._transitionTo = function (toValue, callback) {
-      var lastPosition = _this._getLastPosition();
-      var currentTransitionProps = {
-        progress: lastPosition
-      };
-      var nextTransitionProps = {
-        progress: toValue
-      };
-      var transitionSpec = void 0;
-      if (_this.props.configureTransition) {
-        transitionSpec = _this.props.configureTransition(currentTransitionProps, nextTransitionProps);
-      }
-      if (transitionSpec) {
-        var _transitionSpec = transitionSpec,
-            timing = _transitionSpec.timing,
-            transitionConfig = babelHelpers.objectWithoutProperties(_transitionSpec, ['timing']);
-
-        timing(_this.state.position, babelHelpers.extends({}, transitionConfig, {
-          toValue: toValue
-        })).start(callback);
-      } else {
-        _this.state.position.setValue(toValue);
-        if (callback) {
-          callback();
-        }
-      }
-    };
-
-    _this._jumpToIndex = function (index) {
-      if (!_this._mounted) {
-        return;
-      }
-
-      var _this$props = _this.props,
-          canJumpToTab = _this$props.canJumpToTab,
-          navigationState = _this$props.navigationState;
-
-
-      if (canJumpToTab && !canJumpToTab(navigationState.routes[index])) {
-        var lastPosition = _this._getLastPosition();
-        if (lastPosition !== navigationState.index) {
-          _this._transitionTo(navigationState.index);
-        }
-        return;
-      }
-
-      _this._triggerEvent('jump', index);
-      _this._nextIndex = index;
-      _this._transitionTo(index, function () {
-        return global.requestAnimationFrame(function () {
-          if (_this.props.navigationState.index === index) {
-            return;
-          }
-
-          if (_this._nextIndex === index && _this._mounted) {
-            _this.props.onRequestChangeTab(index);
-          }
-        });
-      });
-    };
-
-    _this._addSubscription = function (event, callback) {
-      if (!_this._subscriptions[event]) {
-        _this._subscriptions[event] = [];
-      }
-      _this._subscriptions[event].push(callback);
-      return {
-        remove: function remove() {
-          var index = _this._subscriptions[event].indexOf(callback);
-          if (index > -1) {
-            _this._subscriptions[event].splice(index, 1);
-          }
-        }
-      };
-    };
-
-    _this._triggerEvent = function (event, value) {
-      if (_this._subscriptions[event]) {
-        _this._subscriptions[event].forEach(function (fn) {
-          return fn(value);
-        });
-      }
-    };
-
-    _this.state = {
+      loaded: [_this.props.navigationState.index],
       layout: babelHelpers.extends({}, _this.props.initialLayout, {
         measured: false
       }),
@@ -56981,18 +56785,11 @@ var TabViewTransitioner = function (_PureComponent) {
     return _this;
   }
 
-  babelHelpers.createClass(TabViewTransitioner, [{
+  babelHelpers.createClass(TabViewAnimated, [{
     key: 'componentDidMount',
     value: function componentDidMount() {
       this._mounted = true;
       this._positionListener = this.state.position.addListener(this._trackPosition);
-    }
-  }, {
-    key: 'componentDidUpdate',
-    value: function componentDidUpdate(prevProps) {
-      if (prevProps.navigationState.index !== this.props.navigationState.index) {
-        this._transitionTo(this.props.navigationState.index);
-      }
     }
   }, {
     key: 'componentWillUnmount',
@@ -57003,71 +56800,264 @@ var TabViewTransitioner = function (_PureComponent) {
   }, {
     key: 'render',
     value: function render() {
+      var _this2 = this;
+
+      var _props = this.props,
+          navigationState = _props.navigationState,
+          onRequestChangeTab = _props.onRequestChangeTab,
+          onChangePosition = _props.onChangePosition,
+          canJumpToTab = _props.canJumpToTab,
+          lazy = _props.lazy,
+          initialLayout = _props.initialLayout,
+          renderScene = _props.renderScene,
+          renderPager = _props.renderPager,
+          renderHeader = _props.renderHeader,
+          renderFooter = _props.renderFooter,
+          rest = babelHelpers.objectWithoutProperties(_props, ['navigationState', 'onRequestChangeTab', 'onChangePosition', 'canJumpToTab', 'lazy', 'initialLayout', 'renderScene', 'renderPager', 'renderHeader', 'renderFooter']);
+
+      var props = this._buildSceneRendererProps();
+
       return _react2.default.createElement(
         _reactNative.View,
-        babelHelpers.extends({}, this.props, { onLayout: this._handleLayout }),
-        this.props.render(this._buildSceneRendererProps())
+        {
+          onLayout: this._handleLayout,
+          loaded: this.state.loaded,
+          style: [styles.container, this.props.style]
+        },
+        renderHeader && _react2.default.createElement(
+          _reactNative.View,
+          { collapsable: false },
+          renderHeader(props)
+        ),
+        renderPager(babelHelpers.extends({}, props, rest, {
+          children: navigationState.routes.map(function (route, index) {
+            return _this2._renderScene(babelHelpers.extends({}, props, {
+              route: route,
+              index: index,
+              focused: index === navigationState.index
+            }));
+          })
+        })),
+        renderFooter && _react2.default.createElement(
+          _reactNative.View,
+          { collapsable: false },
+          renderFooter(props)
+        )
       );
     }
   }]);
-  return TabViewTransitioner;
+  return TabViewAnimated;
 }(_react.PureComponent);
 
-TabViewTransitioner.propTypes = {
+TabViewAnimated.propTypes = {
   navigationState: _TabViewPropTypes.NavigationStatePropType.isRequired,
-  render: _react.PropTypes.func.isRequired,
-  configureTransition: _react.PropTypes.func.isRequired,
-  onRequestChangeTab: _react.PropTypes.func.isRequired,
-  onChangePosition: _react.PropTypes.func,
-  initialLayout: _react.PropTypes.shape({
-    height: _react.PropTypes.number.isRequired,
-    width: _react.PropTypes.number.isRequired
+  onRequestChangeTab: _propTypes2.default.func.isRequired,
+  onChangePosition: _propTypes2.default.func,
+  initialLayout: _propTypes2.default.shape({
+    height: _propTypes2.default.number.isRequired,
+    width: _propTypes2.default.number.isRequired
   }),
-  canJumpToTab: _react.PropTypes.func
+  canJumpToTab: _propTypes2.default.func,
+  renderPager: _propTypes2.default.func.isRequired,
+  renderScene: _propTypes2.default.func.isRequired,
+  renderHeader: _propTypes2.default.func,
+  renderFooter: _propTypes2.default.func,
+  lazy: _propTypes2.default.bool
 };
-TabViewTransitioner.defaultProps = {
-  configureTransition: function configureTransition() {
-    return DefaultTransitionSpec;
+TabViewAnimated.defaultProps = {
+  renderPager: function renderPager(props) {
+    return _react2.default.createElement(TabViewPager, props);
   },
   initialLayout: {
     height: 0,
     width: 0
   }
 };
-exports.default = TabViewTransitioner;
-}, 501, null, "react-native-tab-view/src/TabViewTransitioner.js");
+
+var _initialiseProps = function _initialiseProps() {
+  var _this3 = this;
+
+  this._mounted = false;
+  this._subscriptions = {};
+
+  this._renderScene = function (props) {
+    var _props2 = _this3.props,
+        renderScene = _props2.renderScene,
+        lazy = _props2.lazy;
+    var navigationState = props.navigationState;
+    var loaded = _this3.state.loaded;
+
+    if (lazy) {
+      if (loaded.includes(navigationState.routes.indexOf(props.route))) {
+        return renderScene(props);
+      }
+      return null;
+    }
+    return renderScene(props);
+  };
+
+  this._handleChangePosition = function (value) {
+    var _props3 = _this3.props,
+        onChangePosition = _props3.onChangePosition,
+        navigationState = _props3.navigationState,
+        lazy = _props3.lazy;
+
+    if (onChangePosition) {
+      onChangePosition(value);
+    }
+    var loaded = _this3.state.loaded;
+
+    if (lazy) {
+      var next = Math.ceil(value);
+      if (next === navigationState.index) {
+        next = Math.floor(value);
+      }
+      if (loaded.includes(next)) {
+        return;
+      }
+      _this3.setState({
+        loaded: [].concat(babelHelpers.toConsumableArray(loaded), [next])
+      });
+    }
+  };
+
+  this._trackPosition = function (e) {
+    _this3._handleChangePosition(e.value);
+    _this3._triggerEvent('position', e.value);
+    _this3._lastPosition = e.value;
+    var onChangePosition = _this3.props.onChangePosition;
+
+    if (onChangePosition) {
+      onChangePosition(e.value);
+    }
+  };
+
+  this._getLastPosition = function () {
+    if (typeof _this3._lastPosition === 'number') {
+      return _this3._lastPosition;
+    } else {
+      return _this3.props.navigationState.index;
+    }
+  };
+
+  this._handleLayout = function (e) {
+    var _e$nativeEvent$layout = e.nativeEvent.layout,
+        height = _e$nativeEvent$layout.height,
+        width = _e$nativeEvent$layout.width;
+
+
+    if (_this3.state.layout.width === width && _this3.state.layout.height === height) {
+      return;
+    }
+
+    _this3.setState({
+      layout: {
+        measured: true,
+        height: height,
+        width: width
+      }
+    });
+  };
+
+  this._buildSceneRendererProps = function () {
+    return {
+      layout: _this3.state.layout,
+      navigationState: _this3.props.navigationState,
+      position: _this3.state.position,
+      jumpToIndex: _this3._jumpToIndex,
+      getLastPosition: _this3._getLastPosition,
+      subscribe: _this3._addSubscription
+    };
+  };
+
+  this._jumpToIndex = function (index) {
+    if (!_this3._mounted) {
+      return;
+    }
+
+    var _props4 = _this3.props,
+        canJumpToTab = _props4.canJumpToTab,
+        navigationState = _props4.navigationState;
+
+
+    if (canJumpToTab && !canJumpToTab(navigationState.routes[index])) {
+      _this3._triggerEvent('reset', navigationState.index);
+      return;
+    }
+
+    if (index !== navigationState.index) {
+      _this3.props.onRequestChangeTab(index);
+    }
+  };
+
+  this._addSubscription = function (event, callback) {
+    if (!_this3._subscriptions[event]) {
+      _this3._subscriptions[event] = [];
+    }
+    _this3._subscriptions[event].push(callback);
+    return {
+      remove: function remove() {
+        var index = _this3._subscriptions[event].indexOf(callback);
+        if (index > -1) {
+          _this3._subscriptions[event].splice(index, 1);
+        }
+      }
+    };
+  };
+
+  this._triggerEvent = function (event, value) {
+    if (_this3._subscriptions[event]) {
+      _this3._subscriptions[event].forEach(function (fn) {
+        return fn(value);
+      });
+    }
+  };
+};
+
+exports.default = TabViewAnimated;
+
+
+var styles = _reactNative.StyleSheet.create({
+  container: {
+    flex: 1,
+    overflow: 'hidden'
+  }
+});
+}, 752, null, "react-native-tab-view/src/TabViewAnimated.js");
 __d(/* react-native-tab-view/src/TabViewPropTypes.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.SceneRendererPropType = exports.NavigationStatePropType = exports.NavigationRoutePropType = undefined;
 
-var _react = require(13     ); // 13 = react
+var _propTypes = require(419         ); // 419 = prop-types
+
+var _propTypes2 = babelHelpers.interopRequireDefault(_propTypes);
 
 var _reactNative = require(46            ); // 46 = react-native
 
-var NavigationRoutePropType = exports.NavigationRoutePropType = _react.PropTypes.shape({
-  title: _react.PropTypes.string,
-  key: _react.PropTypes.string.isRequired
+var NavigationRoutePropType = exports.NavigationRoutePropType = _propTypes2.default.shape({
+  title: _propTypes2.default.string,
+  key: _propTypes2.default.string.isRequired
 });
 
-var NavigationStatePropType = exports.NavigationStatePropType = _react.PropTypes.shape({
-  routes: _react.PropTypes.arrayOf(NavigationRoutePropType).isRequired,
-  index: _react.PropTypes.number.isRequired
+var NavigationStatePropType = exports.NavigationStatePropType = _propTypes2.default.shape({
+  routes: _propTypes2.default.arrayOf(NavigationRoutePropType).isRequired,
+  index: _propTypes2.default.number.isRequired
 });
 
 var SceneRendererPropType = exports.SceneRendererPropType = {
-  layout: _react.PropTypes.shape({
-    measured: _react.PropTypes.bool.isRequired,
-    height: _react.PropTypes.number.isRequired,
-    width: _react.PropTypes.number.isRequired
+  layout: _propTypes2.default.shape({
+    measured: _propTypes2.default.bool.isRequired,
+    height: _propTypes2.default.number.isRequired,
+    width: _propTypes2.default.number.isRequired
   }).isRequired,
   navigationState: NavigationStatePropType.isRequired,
-  position: _react.PropTypes.instanceOf(_reactNative.Animated.Value).isRequired,
-  jumpToIndex: _react.PropTypes.func.isRequired,
-  getLastPosition: _react.PropTypes.func.isRequired,
-  subscribe: _react.PropTypes.func.isRequired
+  position: _propTypes2.default.instanceOf(_reactNative.Animated.Value).isRequired,
+  jumpToIndex: _propTypes2.default.func.isRequired,
+  getLastPosition: _propTypes2.default.func.isRequired,
+  subscribe: _propTypes2.default.func.isRequired
 };
-}, 502, null, "react-native-tab-view/src/TabViewPropTypes.js");
+}, 753, null, "react-native-tab-view/src/TabViewPropTypes.js");
 __d(/* react-native-tab-view/src/TabViewPagerAndroid.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -57076,73 +57066,73 @@ var _react = require(13     ); // 13 = react
 
 var _react2 = babelHelpers.interopRequireDefault(_react);
 
+var _propTypes = require(419         ); // 419 = prop-types
+
+var _propTypes2 = babelHelpers.interopRequireDefault(_propTypes);
+
 var _reactNative = require(46            ); // 46 = react-native
 
-var _TabViewPropTypes = require(502                 ); // 502 = ./TabViewPropTypes
-
-var styles = _reactNative.StyleSheet.create({
-  container: {
-    flexGrow: 1
-  },
-
-  page: {
-    overflow: 'hidden'
-  }
-});
+var _TabViewPropTypes = require(753                 ); // 753 = ./TabViewPropTypes
 
 var TabViewPagerAndroid = function (_PureComponent) {
   babelHelpers.inherits(TabViewPagerAndroid, _PureComponent);
 
-  function TabViewPagerAndroid() {
-    var _ref;
-
-    var _temp, _this, _ret;
-
+  function TabViewPagerAndroid(props) {
     babelHelpers.classCallCheck(this, TabViewPagerAndroid);
 
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
+    var _this = babelHelpers.possibleConstructorReturn(this, (TabViewPagerAndroid.__proto__ || Object.getPrototypeOf(TabViewPagerAndroid)).call(this, props));
 
-    return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = TabViewPagerAndroid.__proto__ || Object.getPrototypeOf(TabViewPagerAndroid)).call.apply(_ref, [this].concat(args))), _this), _this._isDrag = false, _this._isIdle = true, _this._setPage = function (index) {
-      if (_this._viewPager && _this._currentIndex !== index) {
-        _this._currentIndex = index;
+    _this._isIdle = true;
+    _this._currentIndex = 0;
+
+    _this._getPageIndex = function (index) {
+      return _reactNative.I18nManager.isRTL ? _this.props.navigationState.routes.length - (index + 1) : index;
+    };
+
+    _this._setPage = function (index) {
+      if (_this._viewPager) {
+        var page = _this._getPageIndex(index);
         if (_this.props.animationEnabled !== false) {
-          _this._viewPager.setPage(index);
+          _this._viewPager.setPage(page);
         } else {
-          _this._viewPager.setPageWithoutAnimation(index);
+          _this._viewPager.setPageWithoutAnimation(page);
         }
       }
-    }, _this._handleJump = function (index) {
-      if (_this._isIdle) {
+    };
+
+    _this._handlePageChange = function (index) {
+      if (_this._isIdle && _this._currentIndex !== index) {
         _this._setPage(index);
+        _this._currentIndex = index;
       }
-    }, _this._handlePageScroll = function (e) {
-      if (_this._isDrag) {
-        _this.props.position.setValue(e.nativeEvent.position + e.nativeEvent.offset);
-      }
-    }, _this._handlePageScrollStateChanged = function (e) {
+    };
+
+    _this._handlePageScroll = function (e) {
+      _this.props.position.setValue(_this._getPageIndex(e.nativeEvent.position) + e.nativeEvent.offset * (_reactNative.I18nManager.isRTL ? -1 : 1));
+    };
+
+    _this._handlePageScrollStateChanged = function (e) {
       _this._isIdle = e === 'idle';
-      if (e === 'dragging') {
-        _this._isDrag = true;
-      } else if (e === 'idle') {
-        _this._isDrag = false;
-        if (_this._currentIndex !== _this.props.navigationState.index) {
-          _this.props.jumpToIndex(_this._currentIndex);
-        }
-      }
-    }, _this._handlePageSelected = function (e) {
-      _this._currentIndex = e.nativeEvent.position;
-    }, _this._setRef = function (el) {
+      _this.props.jumpToIndex(_this._currentIndex);
+    };
+
+    _this._handlePageSelected = function (e) {
+      var index = _this._getPageIndex(e.nativeEvent.position);
+      _this._currentIndex = index;
+    };
+
+    _this._setRef = function (el) {
       return _this._viewPager = el;
-    }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
+    };
+
+    _this._currentIndex = _this.props.navigationState.index;
+    return _this;
   }
 
   babelHelpers.createClass(TabViewPagerAndroid, [{
-    key: 'componentWillMount',
-    value: function componentWillMount() {
-      this._currentIndex = this.props.navigationState.index;
-      this._jumpListener = this.props.subscribe('jump', this._handleJump);
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this._resetListener = this.props.subscribe('reset', this._handlePageChange);
     }
   }, {
     key: 'componentWillReceiveProps',
@@ -57152,7 +57142,11 @@ var TabViewPagerAndroid = function (_PureComponent) {
       if (this.props.layout !== nextProps.layout || _react.Children.count(this.props.children) !== _react.Children.count(nextProps.children)) {
         global.requestAnimationFrame(function () {
           if (_this2._viewPager) {
-            _this2._viewPager.setPageWithoutAnimation(nextProps.navigationState.index);
+            var navigationState = nextProps.navigationState;
+
+            var page = _reactNative.I18nManager.isRTL ? navigationState.routes.length - (navigationState.index + 1) : navigationState.index;
+
+            _this2._viewPager.setPageWithoutAnimation(page);
           }
         });
       }
@@ -57160,14 +57154,12 @@ var TabViewPagerAndroid = function (_PureComponent) {
   }, {
     key: 'componentDidUpdate',
     value: function componentDidUpdate() {
-      if (this._isIdle) {
-        this._setPage(this.props.navigationState.index);
-      }
+      this._handlePageChange(this.props.navigationState.index);
     }
   }, {
     key: 'componentWillUnmount',
     value: function componentWillUnmount() {
-      this._jumpListener.remove();
+      this._resetListener.remove();
     }
   }, {
     key: 'render',
@@ -57177,12 +57169,30 @@ var TabViewPagerAndroid = function (_PureComponent) {
           navigationState = _props.navigationState,
           swipeEnabled = _props.swipeEnabled;
 
+      var content = _react.Children.map(children, function (child, i) {
+        return _react2.default.createElement(
+          _reactNative.View,
+          {
+            key: navigationState.routes[i].key,
+            testID: navigationState.routes[i].testID,
+            style: styles.page
+          },
+          child
+        );
+      });
+
+      if (_reactNative.I18nManager.isRTL) {
+        content.reverse();
+      }
+
+      var initialPage = this._getPageIndex(navigationState.index);
+
       return _react2.default.createElement(
         _reactNative.ViewPagerAndroid,
         {
           key: navigationState.routes.length,
           keyboardDismissMode: 'on-drag',
-          initialPage: navigationState.index,
+          initialPage: initialPage,
           scrollEnabled: swipeEnabled !== false,
           onPageScroll: this._handlePageScroll,
           onPageScrollStateChanged: this._handlePageScrollStateChanged,
@@ -57190,17 +57200,7 @@ var TabViewPagerAndroid = function (_PureComponent) {
           style: styles.container,
           ref: this._setRef
         },
-        _react.Children.map(children, function (child, i) {
-          return _react2.default.createElement(
-            _reactNative.View,
-            {
-              key: navigationState.routes[i].key,
-              testID: navigationState.routes[i].testID,
-              style: styles.page
-            },
-            child
-          );
-        })
+        content
       );
     }
   }]);
@@ -57208,12 +57208,23 @@ var TabViewPagerAndroid = function (_PureComponent) {
 }(_react.PureComponent);
 
 TabViewPagerAndroid.propTypes = babelHelpers.extends({}, _TabViewPropTypes.SceneRendererPropType, {
-  swipeEnabled: _react.PropTypes.bool,
-  animationEnabled: _react.PropTypes.bool,
-  children: _react.PropTypes.node
+  animationEnabled: _propTypes2.default.bool,
+  swipeEnabled: _propTypes2.default.bool,
+  children: _propTypes2.default.node
 });
 exports.default = TabViewPagerAndroid;
-}, 503, null, "react-native-tab-view/src/TabViewPagerAndroid.js");
+
+
+var styles = _reactNative.StyleSheet.create({
+  container: {
+    flexGrow: 1
+  },
+
+  page: {
+    overflow: 'hidden'
+  }
+});
+}, 754, null, "react-native-tab-view/src/TabViewPagerAndroid.js");
 __d(/* react-native-tab-view/src/TabViewPagerScroll.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -57222,96 +57233,88 @@ var _react = require(13     ); // 13 = react
 
 var _react2 = babelHelpers.interopRequireDefault(_react);
 
+var _propTypes = require(419         ); // 419 = prop-types
+
+var _propTypes2 = babelHelpers.interopRequireDefault(_propTypes);
+
 var _reactNative = require(46            ); // 46 = react-native
 
-var _TabViewPropTypes = require(502                 ); // 502 = ./TabViewPropTypes
-
-var styles = _reactNative.StyleSheet.create({
-  container: {
-    flexGrow: 1
-  },
-
-  page: {
-    flex: 1,
-    overflow: 'hidden'
-  }
-});
+var _TabViewPropTypes = require(753                 ); // 753 = ./TabViewPropTypes
 
 var TabViewPagerScroll = function (_PureComponent) {
   babelHelpers.inherits(TabViewPagerScroll, _PureComponent);
 
-  function TabViewPagerScroll() {
-    var _ref;
-
-    var _temp, _this, _ret;
-
+  function TabViewPagerScroll(props) {
     babelHelpers.classCallCheck(this, TabViewPagerScroll);
 
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
+    var _this = babelHelpers.possibleConstructorReturn(this, (TabViewPagerScroll.__proto__ || Object.getPrototypeOf(TabViewPagerScroll)).call(this, props));
 
-    return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = TabViewPagerScroll.__proto__ || Object.getPrototypeOf(TabViewPagerScroll)).call.apply(_ref, [this].concat(args))), _this), _this._isManualScroll = false, _this._isMomentumScroll = false, _this._scrollTo = function (x) {
-      if (_this._scrollView) {
+    _this._nextOffset = 0;
+    _this._isIdle = true;
+
+    _this._scrollTo = function (x) {
+      var animated = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : _this.props.animationEnabled !== false;
+
+      _this._nextOffset = x;
+
+      if (_this._isIdle && _this._scrollView) {
         _this._scrollView.scrollTo({
           x: x,
-          animated: false
+          animated: animated
         });
       }
-    }, _this._updatePosition = function (value) {
-      if (_this._isManualScroll || !_this._scrollView) {
-        return;
-      }
-      _this._scrollTo(value * _this.props.layout.width);
-    }, _this._handleBeginDrag = function () {
-      _this._isManualScroll = true;
-      _this._isMomentumScroll = false;
-    }, _this._handleEndDrag = function () {
-      global.requestAnimationFrame(function () {
-        if (_this._isMomentumScroll) {
-          return;
-        }
-        _this._isManualScroll = false;
-      });
-    }, _this._handleMomentumScrollBegin = function () {
-      _this._isMomentumScroll = true;
-    }, _this._handleMomentumScrollEnd = function (e) {
-      _this._isMomentumScroll = false;
-      _this._isManualScroll = false;
+    };
 
+    _this._handleMomentumScrollEnd = function (e) {
       var nextIndex = Math.round(e.nativeEvent.contentOffset.x / _this.props.layout.width);
+      _this._isIdle = true;
       _this.props.jumpToIndex(nextIndex);
-    }, _this._handleScroll = function (e) {
-      if (!_this._isManualScroll) {
-        return;
-      }
+    };
+
+    _this._handleScroll = function (e) {
+      _this._isIdle = e.nativeEvent.contentOffset.x === _this._nextOffset;
       _this.props.position.setValue(e.nativeEvent.contentOffset.x / _this.props.layout.width);
-    }, _this._setRef = function (el) {
+    };
+
+    _this._setRef = function (el) {
       return _this._scrollView = el;
-    }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
+    };
+
+    _this.state = {
+      initialOffset: {
+        x: _this.props.navigationState.index * _this.props.layout.width,
+        y: 0
+      }
+    };
+    return _this;
   }
 
   babelHelpers.createClass(TabViewPagerScroll, [{
     key: 'componentDidMount',
     value: function componentDidMount() {
-      this._scrollTo(this.props.navigationState.index * this.props.layout.width);
-      this._positionListener = this.props.subscribe('position', this._updatePosition);
+      this._scrollTo(this.props.navigationState.index * this.props.layout.width, false);
+      this._resetListener = this.props.subscribe('reset', this._scrollTo);
     }
   }, {
     key: 'componentDidUpdate',
     value: function componentDidUpdate(prevProps) {
       var _this2 = this;
 
-      if (prevProps.layout !== this.props.layout || _react.Children.count(prevProps.children) !== _react.Children.count(this.props.children)) {
-        global.requestAnimationFrame(function () {
-          return _this2._scrollTo(_this2.props.navigationState.index * _this2.props.layout.width);
-        });
+      var amount = this.props.navigationState.index * this.props.layout.width;
+      if (prevProps.navigationState !== this.props.navigationState || prevProps.layout !== this.props.layout) {
+        if (_reactNative.Platform.OS === 'android' || prevProps.navigationState !== this.props.navigationState) {
+          global.requestAnimationFrame(function () {
+            return _this2._scrollTo(amount);
+          });
+        } else {
+          this._scrollTo(amount, false);
+        }
       }
     }
   }, {
     key: 'componentWillUnmount',
     value: function componentWillUnmount() {
-      this._positionListener.remove();
+      this._resetListener.remove();
     }
   }, {
     key: 'render',
@@ -57337,11 +57340,8 @@ var TabViewPagerScroll = function (_PureComponent) {
           showsHorizontalScrollIndicator: false,
           scrollEventThrottle: 16,
           onScroll: this._handleScroll,
-          onScrollBeginDrag: this._handleBeginDrag,
-          onScrollEndDrag: this._handleEndDrag,
-          onMomentumScrollBegin: this._handleMomentumScrollBegin,
           onMomentumScrollEnd: this._handleMomentumScrollEnd,
-          contentOffset: { x: this.props.navigationState.index * this.props.layout.width, y: 0 },
+          contentOffset: this.state.initialOffset,
           style: styles.container,
           contentContainerStyle: layout.width ? null : styles.container,
           ref: this._setRef
@@ -57352,9 +57352,9 @@ var TabViewPagerScroll = function (_PureComponent) {
             {
               key: navigationState.routes[i].key,
               testID: navigationState.routes[i].testID,
-              style: layout.width ? { width: layout.width, overflow: 'hidden' } : i === 0 ? styles.page : null
+              style: layout.width ? { width: layout.width, overflow: 'hidden' } : i === navigationState.index ? styles.page : null
             },
-            i === 0 || layout.width ? child : null
+            i === navigationState.index || layout.width ? child : null
           );
         })
       );
@@ -57364,11 +57364,24 @@ var TabViewPagerScroll = function (_PureComponent) {
 }(_react.PureComponent);
 
 TabViewPagerScroll.propTypes = babelHelpers.extends({}, _TabViewPropTypes.SceneRendererPropType, {
-  swipeEnabled: _react.PropTypes.bool,
-  children: _react.PropTypes.node
+  animationEnabled: _propTypes2.default.bool,
+  swipeEnabled: _propTypes2.default.bool,
+  children: _propTypes2.default.node
 });
 exports.default = TabViewPagerScroll;
-}, 504, null, "react-native-tab-view/src/TabViewPagerScroll.js");
+
+
+var styles = _reactNative.StyleSheet.create({
+  container: {
+    flexGrow: 1
+  },
+
+  page: {
+    flex: 1,
+    overflow: 'hidden'
+  }
+});
+}, 755, null, "react-native-tab-view/src/TabViewPagerScroll.js");
 __d(/* react-native-tab-view/src/TabViewPagerPan.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -57377,23 +57390,21 @@ var _react = require(13     ); // 13 = react
 
 var _react2 = babelHelpers.interopRequireDefault(_react);
 
+var _propTypes = require(419         ); // 419 = prop-types
+
+var _propTypes2 = babelHelpers.interopRequireDefault(_propTypes);
+
 var _reactNative = require(46            ); // 46 = react-native
 
-var _TabViewStyleInterpolator = require(506                         ); // 506 = ./TabViewStyleInterpolator
-
-var _TabViewStyleInterpolator2 = babelHelpers.interopRequireDefault(_TabViewStyleInterpolator);
-
-var _TabViewPropTypes = require(502                 ); // 502 = ./TabViewPropTypes
-
-var styles = _reactNative.StyleSheet.create({
-  sheet: {
-    flexGrow: 1,
-    flexDirection: 'row',
-    alignItems: 'stretch'
-  }
-});
+var _TabViewPropTypes = require(753                 ); // 753 = ./TabViewPropTypes
 
 var DEAD_ZONE = 12;
+
+var DefaultTransitionSpec = {
+  timing: _reactNative.Animated.spring,
+  tension: 300,
+  friction: 35
+};
 
 var TabViewPagerPan = function (_PureComponent) {
   babelHelpers.inherits(TabViewPagerPan, _PureComponent);
@@ -57409,11 +57420,11 @@ var TabViewPagerPan = function (_PureComponent) {
       args[_key] = arguments[_key];
     }
 
-    return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = TabViewPagerPan.__proto__ || Object.getPrototypeOf(TabViewPagerPan)).call.apply(_ref, [this].concat(args))), _this), _this._lastValue = null, _this._isMoving = null, _this._startDirection = 0, _this._isIndexInRange = function (index) {
+    return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = TabViewPagerPan.__proto__ || Object.getPrototypeOf(TabViewPagerPan)).call.apply(_ref, [this].concat(args))), _this), _this._pendingIndex = null, _this._lastValue = null, _this._isMoving = null, _this._startDirection = 0, _this._isIndexInRange = function (index) {
       var routes = _this.props.navigationState.routes;
 
       return index >= 0 && index <= routes.length - 1;
-    }, _this._isMovingHorzontally = function (evt, gestureState) {
+    }, _this._isMovingHorizontally = function (evt, gestureState) {
       return Math.abs(gestureState.dx) > Math.abs(gestureState.dy * 3) && Math.abs(gestureState.vx) > Math.abs(gestureState.vy * 3);
     }, _this._isReverseDirection = function (gestureState) {
       if (_this._startDirection > 0) {
@@ -57422,8 +57433,7 @@ var TabViewPagerPan = function (_PureComponent) {
         return gestureState.vx > 0;
       }
     }, _this._getNextIndex = function (evt, gestureState) {
-      var index = _this.props.navigationState.index;
-
+      var currentIndex = typeof _this._pendingIndex === 'number' ? _this._pendingIndex : _this.props.navigationState.index;
 
       var swipeVelocityThreshold = _this.props.swipeVelocityThreshold;
 
@@ -57432,12 +57442,12 @@ var TabViewPagerPan = function (_PureComponent) {
       }
 
       if (Math.abs(gestureState.dx) > _this.props.swipeDistanceThreshold || Math.abs(gestureState.vx) > swipeVelocityThreshold) {
-        var nextIndex = index - gestureState.dx / Math.abs(gestureState.dx);
+        var nextIndex = currentIndex - gestureState.dx / Math.abs(gestureState.dx) * (_reactNative.I18nManager.isRTL ? -1 : 1);
         if (_this._isIndexInRange(nextIndex)) {
           return nextIndex;
         }
       }
-      return index;
+      return currentIndex;
     }, _this._canMoveScreen = function (evt, gestureState) {
       if (_this.props.swipeEnabled === false) {
         return false;
@@ -57446,7 +57456,7 @@ var TabViewPagerPan = function (_PureComponent) {
           routes = _this$props$navigatio.routes,
           index = _this$props$navigatio.index;
 
-      var canMove = _this._isMovingHorzontally(evt, gestureState) && (gestureState.dx >= DEAD_ZONE && index >= 0 || gestureState.dx <= -DEAD_ZONE && index <= routes.length - 1);
+      var canMove = _this._isMovingHorizontally(evt, gestureState) && (gestureState.dx >= DEAD_ZONE && index >= 0 || gestureState.dx <= -DEAD_ZONE && index <= routes.length - 1);
       if (canMove) {
         _this._startDirection = gestureState.dx;
       }
@@ -57458,9 +57468,9 @@ var TabViewPagerPan = function (_PureComponent) {
       var width = _this.props.layout.width;
 
       var currentPosition = typeof _this._lastValue === 'number' ? _this._lastValue : _this.props.navigationState.index;
-      var nextPosition = currentPosition - gestureState.dx / width;
+      var nextPosition = currentPosition - gestureState.dx / width * (_reactNative.I18nManager.isRTL ? -1 : 1);
       if (_this._isMoving === null) {
-        _this._isMoving = _this._isMovingHorzontally(evt, gestureState);
+        _this._isMoving = _this._isMovingHorizontally(evt, gestureState);
       }
       if (_this._isMoving && _this._isIndexInRange(nextPosition)) {
         _this.props.position.setValue(nextPosition);
@@ -57471,13 +57481,45 @@ var TabViewPagerPan = function (_PureComponent) {
       if (currentValue !== currentIndex) {
         if (_this._isMoving && !_this._isReverseDirection(gestureState)) {
           var nextIndex = _this._getNextIndex(evt, gestureState);
-          _this.props.jumpToIndex(nextIndex);
+          _this._transitionTo(nextIndex);
         } else {
-          _this.props.jumpToIndex(currentIndex);
+          _this._transitionTo(currentIndex);
         }
       }
       _this._lastValue = null;
       _this._isMoving = null;
+    }, _this._transitionTo = function (toValue) {
+      var lastPosition = _this.props.getLastPosition();
+      var currentTransitionProps = {
+        progress: lastPosition
+      };
+      var nextTransitionProps = {
+        progress: toValue
+      };
+
+      _this._pendingIndex = toValue;
+
+      if (_this.props.animationEnabled !== false) {
+        var transitionSpec = _this.props.configureTransition(currentTransitionProps, nextTransitionProps);
+        var timing = transitionSpec.timing,
+            transitionConfig = babelHelpers.objectWithoutProperties(transitionSpec, ['timing']);
+
+
+        timing(_this.props.position, babelHelpers.extends({}, transitionConfig, {
+          toValue: toValue
+        })).start(function (_ref2) {
+          var finished = _ref2.finished;
+
+          if (finished) {
+            _this.props.jumpToIndex(toValue);
+            _this._pendingIndex = null;
+          }
+        });
+      } else {
+        _this.props.position.setValue(toValue);
+        _this.props.jumpToIndex(toValue);
+        _this._pendingIndex = null;
+      }
     }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
   }
 
@@ -57497,28 +57539,59 @@ var TabViewPagerPan = function (_PureComponent) {
       });
     }
   }, {
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this._resetListener = this.props.subscribe('reset', this._transitionTo);
+    }
+  }, {
+    key: 'componentDidUpdate',
+    value: function componentDidUpdate(prevProps) {
+      if (prevProps.navigationState.index !== this.props.navigationState.index) {
+        this._transitionTo(this.props.navigationState.index);
+      }
+    }
+  }, {
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      this._resetListener.remove();
+    }
+  }, {
     key: 'render',
     value: function render() {
       var _props = this.props,
+          layout = _props.layout,
+          position = _props.position,
           navigationState = _props.navigationState,
-          layout = _props.layout;
+          children = _props.children;
+      var width = layout.width;
       var routes = navigationState.routes;
 
+      var inputRange = [-1].concat(babelHelpers.toConsumableArray(routes.map(function (x, i) {
+        return i;
+      })));
+      var outputRange = inputRange.map(function (i) {
+        return width * i * (_reactNative.I18nManager.isRTL ? 1 : -1);
+      });
 
-      var style = _TabViewStyleInterpolator2.default.forHorizontal(this.props);
+      var translateX = position.interpolate({
+        inputRange: inputRange,
+        outputRange: outputRange
+      });
 
       return _react2.default.createElement(
         _reactNative.Animated.View,
-        babelHelpers.extends({ style: [styles.sheet, style, { width: layout.width * routes.length }] }, this._panResponder.panHandlers),
-        _react.Children.map(this.props.children, function (child, i) {
+        babelHelpers.extends({
+          style: [styles.sheet, width ? { width: routes.length * width, transform: [{ translateX: translateX }] } : null]
+        }, this._panResponder.panHandlers),
+        _react.Children.map(children, function (child, i) {
           return _react2.default.createElement(
             _reactNative.View,
             {
               key: navigationState.routes[i].key,
               testID: navigationState.routes[i].testID,
-              style: { width: layout.width }
+              style: width ? { width: width } : i === navigationState.index ? _reactNative.StyleSheet.absoluteFill : null
             },
-            child
+            i === navigationState.index || width ? child : null
           );
         })
       );
@@ -57528,50 +57601,35 @@ var TabViewPagerPan = function (_PureComponent) {
 }(_react.PureComponent);
 
 TabViewPagerPan.propTypes = babelHelpers.extends({}, _TabViewPropTypes.SceneRendererPropType, {
-  swipeEnabled: _react.PropTypes.bool,
-  swipeDistanceThreshold: _react.PropTypes.number.isRequired,
-  swipeVelocityThreshold: _react.PropTypes.number.isRequired,
-  children: _react.PropTypes.node
+  configureTransition: _propTypes2.default.func.isRequired,
+  animationEnabled: _propTypes2.default.bool,
+  swipeEnabled: _propTypes2.default.bool,
+  swipeDistanceThreshold: _propTypes2.default.number.isRequired,
+  swipeVelocityThreshold: _propTypes2.default.number.isRequired,
+  children: _propTypes2.default.node
 });
 TabViewPagerPan.defaultProps = {
+  configureTransition: function configureTransition() {
+    return DefaultTransitionSpec;
+  },
+  initialLayout: {
+    height: 0,
+    width: 0
+  },
   swipeDistanceThreshold: 120,
   swipeVelocityThreshold: 0.25
 };
 exports.default = TabViewPagerPan;
-}, 505, null, "react-native-tab-view/src/TabViewPagerPan.js");
-__d(/* react-native-tab-view/src/TabViewStyleInterpolator.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
-  value: true
+
+
+var styles = _reactNative.StyleSheet.create({
+  sheet: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'stretch'
+  }
 });
-
-
-function forHorizontal(props) {
-  var layout = props.layout,
-      position = props.position,
-      navigationState = props.navigationState;
-  var width = layout.width;
-  var routes = navigationState.routes;
-
-  var inputRange = [-1].concat(babelHelpers.toConsumableArray(routes.map(function (x, i) {
-    return i;
-  })));
-  var outputRange = inputRange.map(function (i) {
-    return width * i * -1;
-  });
-
-  var translateX = position.interpolate({
-    inputRange: inputRange,
-    outputRange: outputRange
-  });
-
-  return {
-    transform: [{ translateX: translateX }]
-  };
-}
-
-exports.default = {
-  forHorizontal: forHorizontal
-};
-}, 506, null, "react-native-tab-view/src/TabViewStyleInterpolator.js");
+}, 756, null, "react-native-tab-view/src/TabViewPagerPan.js");
 __d(/* react-native-tab-view/src/TabBar.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -57580,230 +57638,51 @@ var _react = require(13     ); // 13 = react
 
 var _react2 = babelHelpers.interopRequireDefault(_react);
 
+var _propTypes = require(419         ); // 419 = prop-types
+
+var _propTypes2 = babelHelpers.interopRequireDefault(_propTypes);
+
 var _reactNative = require(46            ); // 46 = react-native
 
-var _TouchableItem = require(508              ); // 508 = ./TouchableItem
+var _TouchableItem = require(758              ); // 758 = ./TouchableItem
 
 var _TouchableItem2 = babelHelpers.interopRequireDefault(_TouchableItem);
 
-var _TabViewPropTypes = require(502                 ); // 502 = ./TabViewPropTypes
-
-var styles = _reactNative.StyleSheet.create({
-  container: {
-    flex: 1
-  },
-  scroll: {
-    overflow: _reactNative.Platform.OS === 'web' ? 'auto' : 'scroll'
-  },
-  tabBar: {
-    backgroundColor: '#2196f3',
-    elevation: 4,
-    shadowColor: 'black',
-    shadowOpacity: 0.1,
-    shadowRadius: _reactNative.StyleSheet.hairlineWidth,
-    shadowOffset: {
-      height: _reactNative.StyleSheet.hairlineWidth
-    },
-    zIndex: 1
-  },
-  tabContent: {
-    flexDirection: 'row',
-    flexWrap: 'nowrap'
-  },
-  tabLabel: {
-    backgroundColor: 'transparent',
-    color: 'white',
-    margin: 8
-  },
-  tabItem: {
-    flexGrow: 1,
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  badge: {
-    position: 'absolute',
-    top: 0,
-    right: 0
-  },
-  indicatorContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0
-  },
-  indicator: {
-    backgroundColor: '#ffeb3b',
-    position: 'absolute',
-    left: 0,
-    bottom: 0,
-    right: 0,
-    height: 2
-  }
-});
+var _TabViewPropTypes = require(753                 ); // 753 = ./TabViewPropTypes
 
 var TabBar = function (_PureComponent) {
   babelHelpers.inherits(TabBar, _PureComponent);
 
-  function TabBar() {
-    var _ref;
-
-    var _temp, _this, _ret;
-
+  function TabBar(props) {
     babelHelpers.classCallCheck(this, TabBar);
 
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
+    var _this = babelHelpers.possibleConstructorReturn(this, (TabBar.__proto__ || Object.getPrototypeOf(TabBar)).call(this, props));
+
+    _initialiseProps.call(_this);
+
+    var initialVisibility = 0;
+
+    if (_this.props.scrollEnabled === true) {
+      var tabWidth = _this._getTabWidthFromStyle(_this.props.tabStyle);
+      if (_this.props.layout.width || tabWidth) {
+        initialVisibility = 1;
+      }
+    } else {
+      initialVisibility = 1;
     }
 
-    return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = TabBar.__proto__ || Object.getPrototypeOf(TabBar)).call.apply(_ref, [this].concat(args))), _this), _this.state = {
+    _this.state = {
       offset: new _reactNative.Animated.Value(0),
-      visibility: new _reactNative.Animated.Value(0)
-    }, _this._isManualScroll = false, _this._isMomentumScroll = false, _this._renderLabel = function (scene) {
-      if (typeof _this.props.renderLabel !== 'undefined') {
-        return _this.props.renderLabel(scene);
+      visibility: new _reactNative.Animated.Value(initialVisibility),
+      initialOffset: {
+        x: _this._getScrollAmount(_this.props, _this.props.navigationState.index),
+        y: 0
       }
-      var label = _this.props.getLabelText(scene);
-      if (typeof label !== 'string') {
-        return null;
-      }
-      return _react2.default.createElement(
-        _reactNative.Text,
-        { style: [styles.tabLabel, _this.props.labelStyle] },
-        label
-      );
-    }, _this._renderIndicator = function (props) {
-      if (typeof _this.props.renderIndicator !== 'undefined') {
-        return _this.props.renderIndicator(props);
-      }
-      var width = props.width,
-          position = props.position;
-
-      var translateX = _reactNative.Animated.multiply(position, width);
-      return _react2.default.createElement(_reactNative.Animated.View, {
-        style: [styles.indicator, { width: width, transform: [{ translateX: translateX }] }, _this.props.indicatorStyle]
-      });
-    }, _this._getTabWidthFromStyle = function (style) {
-      if (_this._tabWidthCache && _this._tabWidthCache.style === style) {
-        return _this._tabWidthCache.width;
-      }
-      var passedTabStyle = _reactNative.StyleSheet.flatten(_this.props.tabStyle);
-      var cache = { style: style, width: passedTabStyle ? passedTabStyle.width : null };
-      _this._tabWidthCache = cache;
-      return cache;
-    }, _this._getFinalTabWidth = function (props) {
-      var layout = props.layout,
-          navigationState = props.navigationState;
-
-      var tabWidth = _this._getTabWidthFromStyle(props.tabStyle);
-      if (typeof tabWidth === 'number') {
-        return tabWidth;
-      }
-      if (typeof tabWidth === 'string' && tabWidth.endsWith('%')) {
-        return layout.width * (parseFloat(tabWidth, 10) / 100);
-      }
-      if (props.scrollEnabled) {
-        return layout.width / 5 * 2;
-      }
-      return layout.width / navigationState.routes.length;
-    }, _this._getMaxScrollableDistance = function (props) {
-      var layout = props.layout,
-          navigationState = props.navigationState;
-
-      if (layout.width === 0) {
-        return 0;
-      }
-      var finalTabWidth = _this._getFinalTabWidth(props);
-      var tabBarWidth = finalTabWidth * navigationState.routes.length;
-      var maxDistance = tabBarWidth - layout.width;
-      return Math.max(maxDistance, 0);
-    }, _this._normalizeScrollValue = function (props, value) {
-      var maxDistance = _this._getMaxScrollableDistance(props);
-      return Math.max(Math.min(value, maxDistance), 0);
-    }, _this._getScrollAmount = function (props, i) {
-      var layout = props.layout;
-
-      var finalTabWidth = _this._getFinalTabWidth(props);
-      var centerDistance = finalTabWidth * i + finalTabWidth / 2;
-      var scrollAmount = centerDistance - layout.width / 2;
-      return _this._normalizeScrollValue(props, scrollAmount);
-    }, _this._resetScrollOffset = function (props) {
-      if (!props.scrollEnabled || !_this._scrollView) {
-        return;
-      }
-
-      var scrollAmount = _this._getScrollAmount(props, props.navigationState.index);
-      _this._scrollView.scrollTo({
-        x: scrollAmount,
-        animated: true
-      });
-      _reactNative.Animated.timing(_this.state.offset, {
-        toValue: 0,
-        duration: 150
-      }).start();
-    }, _this._adjustScroll = function (index) {
-      if (!_this.props.scrollEnabled || !_this._scrollView) {
-        return;
-      }
-
-      var scrollAmount = _this._getScrollAmount(_this.props, index);
-      _this._scrollView.scrollTo({
-        x: scrollAmount,
-        animated: false
-      });
-    }, _this._adjustOffset = function (value) {
-      if (!_this._isManualScroll || !_this.props.scrollEnabled) {
-        return;
-      }
-
-      var scrollAmount = _this._getScrollAmount(_this.props, _this.props.navigationState.index);
-      var scrollOffset = value - scrollAmount;
-
-      if (_this._isMomentumScroll) {
-        _reactNative.Animated.spring(_this.state.offset, {
-          toValue: -scrollOffset,
-          tension: 300,
-          friction: 35
-        }).start();
-      } else {
-        _this.state.offset.setValue(-scrollOffset);
-      }
-    }, _this._handleScroll = function (e) {
-      _this._adjustOffset(e.nativeEvent.contentOffset.x);
-    }, _this._handleBeginDrag = function () {
-      _this._isManualScroll = true;
-      _this._isMomentumScroll = false;
-    }, _this._handleEndDrag = function () {
-      global.requestAnimationFrame(function () {
-        if (_this._isMomentumScroll) {
-          return;
-        }
-        _this._isManualScroll = false;
-      });
-    }, _this._handleMomentumScrollBegin = function () {
-      _this._isMomentumScroll = true;
-    }, _this._handleMomentumScrollEnd = function () {
-      _this._isMomentumScroll = false;
-      _this._isManualScroll = false;
-    }, _this._setRef = function (el) {
-      return _this._scrollView = el;
-    }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
+    };
+    return _this;
   }
 
   babelHelpers.createClass(TabBar, [{
-    key: 'componentWillMount',
-    value: function componentWillMount() {
-      if (this.props.scrollEnabled === true) {
-        var tabWidth = this._getTabWidthFromStyle(this.props.tabStyle);
-        if (this.props.layout.width || tabWidth) {
-          this.state.visibility.setValue(1);
-        }
-      } else {
-        this.state.visibility.setValue(1);
-      }
-    }
-  }, {
     key: 'componentDidMount',
     value: function componentDidMount() {
       this._adjustScroll(this.props.navigationState.index);
@@ -57850,7 +57729,6 @@ var TabBar = function (_PureComponent) {
       var routes = navigationState.routes,
           index = navigationState.index;
 
-      var initialOffset = this._getScrollAmount(this.props, this.props.navigationState.index);
       var maxDistance = this._getMaxScrollableDistance(this.props);
       var finalTabWidth = this._getFinalTabWidth(this.props);
       var tabBarWidth = finalTabWidth * routes.length;
@@ -57876,7 +57754,10 @@ var TabBar = function (_PureComponent) {
         { style: [styles.tabBar, this.props.style] },
         _react2.default.createElement(
           _reactNative.Animated.View,
-          { pointerEvents: 'none', style: [styles.indicatorContainer, scrollEnabled ? { width: tabBarWidth, transform: [{ translateX: translateX }] } : null] },
+          {
+            pointerEvents: 'none',
+            style: [styles.indicatorContainer, scrollEnabled ? { width: tabBarWidth, transform: [{ translateX: translateX }] } : null]
+          },
           this._renderIndicator(babelHelpers.extends({}, this.props, {
             width: new _reactNative.Animated.Value(finalTabWidth)
           }))
@@ -57894,6 +57775,7 @@ var TabBar = function (_PureComponent) {
               scrollsToTop: false,
               showsHorizontalScrollIndicator: false,
               automaticallyAdjustContentInsets: false,
+              overScrollMode: 'never',
               contentContainerStyle: [styles.tabContent, scrollEnabled ? null : styles.container],
               scrollEventThrottle: 16,
               onScroll: this._handleScroll,
@@ -57901,7 +57783,7 @@ var TabBar = function (_PureComponent) {
               onScrollEndDrag: this._handleEndDrag,
               onMomentumScrollBegin: this._handleMomentumScrollBegin,
               onMomentumScrollEnd: this._handleMomentumScrollEnd,
-              contentOffset: { x: initialOffset, y: 0 },
+              contentOffset: this.state.initialOffset,
               ref: this._setRef
             },
             routes.map(function (route, i) {
@@ -57969,7 +57851,7 @@ var TabBar = function (_PureComponent) {
 
                     jumpToIndex(i);
                     if (onTabPress) {
-                      onTabPress(routes[i]);
+                      onTabPress(scene);
                     }
                   },
                   style: tabContainerStyle
@@ -57979,13 +57861,17 @@ var TabBar = function (_PureComponent) {
                   { style: styles.container },
                   _react2.default.createElement(
                     _reactNative.Animated.View,
-                    { style: [styles.tabItem, tabStyle, passedTabStyle, styles.container] },
+                    {
+                      style: [styles.tabItem, tabStyle, passedTabStyle, styles.container]
+                    },
                     icon,
                     label
                   ),
                   badge ? _react2.default.createElement(
                     _reactNative.Animated.View,
-                    { style: [styles.badge, { opacity: _this3.state.visibility }] },
+                    {
+                      style: [styles.badge, { opacity: _this3.state.visibility }]
+                    },
                     badge
                   ) : null
                 )
@@ -58000,27 +57886,252 @@ var TabBar = function (_PureComponent) {
 }(_react.PureComponent);
 
 TabBar.propTypes = babelHelpers.extends({}, _TabViewPropTypes.SceneRendererPropType, {
-  scrollEnabled: _react.PropTypes.bool,
+  scrollEnabled: _propTypes2.default.bool,
   pressColor: _TouchableItem2.default.propTypes.pressColor,
   pressOpacity: _TouchableItem2.default.propTypes.pressOpacity,
-  getLabelText: _react.PropTypes.func,
-  renderIcon: _react.PropTypes.func,
-  renderLabel: _react.PropTypes.func,
-  renderIndicator: _react.PropTypes.func,
-  onTabPress: _react.PropTypes.func,
-  tabStyle: _reactNative.View.propTypes.style,
-  indicatorStyle: _reactNative.View.propTypes.style,
+  getLabelText: _propTypes2.default.func,
+  renderIcon: _propTypes2.default.func,
+  renderLabel: _propTypes2.default.func,
+  renderIndicator: _propTypes2.default.func,
+  onTabPress: _propTypes2.default.func,
   labelStyle: _reactNative.Text.propTypes.style,
-  style: _react.PropTypes.any
+  style: _propTypes2.default.any
 });
 TabBar.defaultProps = {
-  getLabelText: function getLabelText(_ref2) {
-    var route = _ref2.route;
+  getLabelText: function getLabelText(_ref) {
+    var route = _ref.route;
     return route.title ? route.title.toUpperCase() : null;
   }
 };
+
+var _initialiseProps = function _initialiseProps() {
+  var _this4 = this;
+
+  this._isManualScroll = false;
+  this._isMomentumScroll = false;
+
+  this._renderLabel = function (scene) {
+    if (typeof _this4.props.renderLabel !== 'undefined') {
+      return _this4.props.renderLabel(scene);
+    }
+    var label = _this4.props.getLabelText(scene);
+    if (typeof label !== 'string') {
+      return null;
+    }
+    return _react2.default.createElement(
+      _reactNative.Text,
+      { style: [styles.tabLabel, _this4.props.labelStyle] },
+      label
+    );
+  };
+
+  this._renderIndicator = function (props) {
+    if (typeof _this4.props.renderIndicator !== 'undefined') {
+      return _this4.props.renderIndicator(props);
+    }
+    var width = props.width,
+        position = props.position;
+
+    var translateX = _reactNative.Animated.multiply(_reactNative.Animated.multiply(position, width), _reactNative.I18nManager.isRTL ? -1 : 1);
+    return _react2.default.createElement(_reactNative.Animated.View, {
+      style: [styles.indicator, { width: width, transform: [{ translateX: translateX }] }, _this4.props.indicatorStyle]
+    });
+  };
+
+  this._getTabWidthFromStyle = function (style) {
+    if (_this4._tabWidthCache && _this4._tabWidthCache.style === style) {
+      return _this4._tabWidthCache.width;
+    }
+    var passedTabStyle = _reactNative.StyleSheet.flatten(_this4.props.tabStyle);
+    var cache = {
+      style: style,
+      width: passedTabStyle ? passedTabStyle.width : null
+    };
+    _this4._tabWidthCache = cache;
+    return cache;
+  };
+
+  this._getFinalTabWidth = function (props) {
+    var layout = props.layout,
+        navigationState = props.navigationState;
+
+    var tabWidth = _this4._getTabWidthFromStyle(props.tabStyle);
+    if (typeof tabWidth === 'number') {
+      return tabWidth;
+    }
+    if (typeof tabWidth === 'string' && tabWidth.endsWith('%')) {
+      return layout.width * (parseFloat(tabWidth, 10) / 100);
+    }
+    if (props.scrollEnabled) {
+      return layout.width / 5 * 2;
+    }
+    return layout.width / navigationState.routes.length;
+  };
+
+  this._getMaxScrollableDistance = function (props) {
+    var layout = props.layout,
+        navigationState = props.navigationState;
+
+    if (layout.width === 0) {
+      return 0;
+    }
+    var finalTabWidth = _this4._getFinalTabWidth(props);
+    var tabBarWidth = finalTabWidth * navigationState.routes.length;
+    var maxDistance = tabBarWidth - layout.width;
+    return Math.max(maxDistance, 0);
+  };
+
+  this._normalizeScrollValue = function (props, value) {
+    var maxDistance = _this4._getMaxScrollableDistance(props);
+    return Math.max(Math.min(value, maxDistance), 0);
+  };
+
+  this._getScrollAmount = function (props, i) {
+    var layout = props.layout;
+
+    var finalTabWidth = _this4._getFinalTabWidth(props);
+    var centerDistance = finalTabWidth * i + finalTabWidth / 2;
+    var scrollAmount = centerDistance - layout.width / 2;
+    return _this4._normalizeScrollValue(props, scrollAmount);
+  };
+
+  this._resetScrollOffset = function (props) {
+    if (!props.scrollEnabled || !_this4._scrollView) {
+      return;
+    }
+
+    var scrollAmount = _this4._getScrollAmount(props, props.navigationState.index);
+    _this4._scrollView.scrollTo({
+      x: scrollAmount,
+      animated: true
+    });
+    _reactNative.Animated.timing(_this4.state.offset, {
+      toValue: 0,
+      duration: 150
+    }).start();
+  };
+
+  this._adjustScroll = function (index) {
+    if (!_this4.props.scrollEnabled || !_this4._scrollView) {
+      return;
+    }
+
+    var scrollAmount = _this4._getScrollAmount(_this4.props, index);
+    _this4._scrollView.scrollTo({
+      x: scrollAmount,
+      animated: false
+    });
+  };
+
+  this._adjustOffset = function (value) {
+    if (!_this4._isManualScroll || !_this4.props.scrollEnabled) {
+      return;
+    }
+
+    var scrollAmount = _this4._getScrollAmount(_this4.props, _this4.props.navigationState.index);
+    var scrollOffset = value - scrollAmount;
+
+    if (_this4._isMomentumScroll) {
+      _reactNative.Animated.spring(_this4.state.offset, {
+        toValue: -scrollOffset,
+        tension: 300,
+        friction: 35
+      }).start();
+    } else {
+      _this4.state.offset.setValue(-scrollOffset);
+    }
+  };
+
+  this._handleScroll = function (e) {
+    _this4._adjustOffset(e.nativeEvent.contentOffset.x);
+  };
+
+  this._handleBeginDrag = function () {
+    _this4._isManualScroll = true;
+    _this4._isMomentumScroll = false;
+  };
+
+  this._handleEndDrag = function () {
+    global.requestAnimationFrame(function () {
+      if (_this4._isMomentumScroll) {
+        return;
+      }
+      _this4._isManualScroll = false;
+    });
+  };
+
+  this._handleMomentumScrollBegin = function () {
+    _this4._isMomentumScroll = true;
+  };
+
+  this._handleMomentumScrollEnd = function () {
+    _this4._isMomentumScroll = false;
+    _this4._isManualScroll = false;
+  };
+
+  this._setRef = function (el) {
+    return _this4._scrollView = el;
+  };
+};
+
 exports.default = TabBar;
-}, 507, null, "react-native-tab-view/src/TabBar.js");
+
+
+var styles = _reactNative.StyleSheet.create({
+  container: {
+    flex: 1
+  },
+  scroll: {
+    overflow: _reactNative.Platform.OS === 'web' ? 'auto' : 'scroll'
+  },
+  tabBar: {
+    backgroundColor: '#2196f3',
+    elevation: 4,
+    shadowColor: 'black',
+    shadowOpacity: 0.1,
+    shadowRadius: _reactNative.StyleSheet.hairlineWidth,
+    shadowOffset: {
+      height: _reactNative.StyleSheet.hairlineWidth
+    },
+    zIndex: 1
+  },
+  tabContent: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap'
+  },
+  tabLabel: {
+    backgroundColor: 'transparent',
+    color: 'white',
+    margin: 8
+  },
+  tabItem: {
+    flexGrow: 1,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0
+  },
+  indicatorContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0
+  },
+  indicator: {
+    backgroundColor: '#ffeb3b',
+    position: 'absolute',
+    left: 0,
+    bottom: 0,
+    right: 0,
+    height: 2
+  }
+});
+}, 757, null, "react-native-tab-view/src/TabBar.js");
 __d(/* react-native-tab-view/src/TouchableItem.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -58028,6 +58139,10 @@ __d(/* react-native-tab-view/src/TouchableItem.js */function(global, require, mo
 var _react = require(13     ); // 13 = react
 
 var _react2 = babelHelpers.interopRequireDefault(_react);
+
+var _propTypes = require(419         ); // 419 = prop-types
+
+var _propTypes2 = babelHelpers.interopRequireDefault(_propTypes);
 
 var _reactNative = require(46            ); // 46 = react-native
 
@@ -58037,8 +58152,19 @@ var TouchableItem = function (_PureComponent) {
   babelHelpers.inherits(TouchableItem, _PureComponent);
 
   function TouchableItem() {
+    var _ref;
+
+    var _temp, _this, _ret;
+
     babelHelpers.classCallCheck(this, TouchableItem);
-    return babelHelpers.possibleConstructorReturn(this, (TouchableItem.__proto__ || Object.getPrototypeOf(TouchableItem)).apply(this, arguments));
+
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = TouchableItem.__proto__ || Object.getPrototypeOf(TouchableItem)).call.apply(_ref, [this].concat(args))), _this), _this._handlePress = function () {
+      global.requestAnimationFrame(_this.props.onPress);
+    }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
   }
 
   babelHelpers.createClass(TouchableItem, [{
@@ -58056,6 +58182,7 @@ var TouchableItem = function (_PureComponent) {
         return _react2.default.createElement(
           _reactNative.TouchableNativeFeedback,
           babelHelpers.extends({}, rest, {
+            onPress: this._handlePress,
             background: _reactNative.TouchableNativeFeedback.Ripple(pressColor, borderless)
           }),
           _react2.default.createElement(
@@ -58068,6 +58195,7 @@ var TouchableItem = function (_PureComponent) {
         return _react2.default.createElement(
           _reactNative.TouchableOpacity,
           babelHelpers.extends({}, rest, {
+            onPress: this._handlePress,
             style: style,
             activeOpacity: pressOpacity
           }),
@@ -58080,18 +58208,119 @@ var TouchableItem = function (_PureComponent) {
 }(_react.PureComponent);
 
 TouchableItem.propTypes = {
-  delayPressIn: _react.PropTypes.number,
-  borderless: _react.PropTypes.bool,
-  pressColor: _react.PropTypes.string,
-  pressOpacity: _react.PropTypes.number,
-  children: _react.PropTypes.node.isRequired,
-  style: _reactNative.View.propTypes.style
+  onPress: _propTypes2.default.func.isRequired,
+  delayPressIn: _propTypes2.default.number,
+  borderless: _propTypes2.default.bool,
+  pressColor: _propTypes2.default.string,
+  pressOpacity: _propTypes2.default.number,
+  children: _propTypes2.default.node.isRequired
 };
 TouchableItem.defaultProps = {
   pressColor: 'rgba(255, 255, 255, .4)'
 };
 exports.default = TouchableItem;
-}, 508, null, "react-native-tab-view/src/TouchableItem.js");
+}, 758, null, "react-native-tab-view/src/TouchableItem.js");
+__d(/* react-native-tab-view/src/SceneMap.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = SceneMap;
+
+var _react = require(13     ); // 13 = react
+
+var _react2 = babelHelpers.interopRequireDefault(_react);
+
+function SceneMap(scenes) {
+  var SceneComponent = function (_PureComponent) {
+    babelHelpers.inherits(SceneComponent, _PureComponent);
+
+    function SceneComponent() {
+      babelHelpers.classCallCheck(this, SceneComponent);
+      return babelHelpers.possibleConstructorReturn(this, (SceneComponent.__proto__ || Object.getPrototypeOf(SceneComponent)).apply(this, arguments));
+    }
+
+    babelHelpers.createClass(SceneComponent, [{
+      key: 'render',
+      value: function render() {
+        return _react2.default.createElement(scenes[this.props.route.key], this.props);
+      }
+    }]);
+    return SceneComponent;
+  }(_react.PureComponent);
+
+  return function (_ref) {
+    var route = _ref.route;
+    return _react2.default.createElement(SceneComponent, { key: route.key, route: route });
+  };
+}
+}, 759, null, "react-native-tab-view/src/SceneMap.js");
+__d(/* react-navigation/src/withCachedChildNavigation.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = withCachedChildNavigation;
+
+var _react = require(13     ); // 13 = react
+
+var _react2 = babelHelpers.interopRequireDefault(_react);
+
+var _addNavigationHelpers = require(466                     ); // 466 = ./addNavigationHelpers
+
+var _addNavigationHelpers2 = babelHelpers.interopRequireDefault(_addNavigationHelpers);
+
+function withCachedChildNavigation(Comp) {
+  var _class, _temp2;
+
+  return _temp2 = _class = function (_PureComponent) {
+    babelHelpers.inherits(_class, _PureComponent);
+
+    function _class() {
+      var _ref;
+
+      var _temp, _this, _ret;
+
+      babelHelpers.classCallCheck(this, _class);
+
+      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = _class.__proto__ || Object.getPrototypeOf(_class)).call.apply(_ref, [this].concat(args))), _this), _this._updateNavigationProps = function (navigation) {
+        if (!_this._childNavigationProps) {
+          _this._childNavigationProps = {};
+        }
+        navigation.state.routes.forEach(function (route) {
+          var childNavigation = _this._childNavigationProps[route.key];
+          if (childNavigation && childNavigation.state === route) {
+            return;
+          }
+          _this._childNavigationProps[route.key] = (0, _addNavigationHelpers2.default)(babelHelpers.extends({}, navigation, {
+            state: route
+          }));
+        });
+      }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
+    }
+
+    babelHelpers.createClass(_class, [{
+      key: 'componentWillMount',
+      value: function componentWillMount() {
+        this._updateNavigationProps(this.props.navigation);
+      }
+    }, {
+      key: 'componentWillReceiveProps',
+      value: function componentWillReceiveProps(nextProps) {
+        this._updateNavigationProps(nextProps.navigation);
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        return _react2.default.createElement(Comp, babelHelpers.extends({}, this.props, {
+          childNavigationProps: this._childNavigationProps
+        }));
+      }
+    }]);
+    return _class;
+  }(_react.PureComponent), _class.displayName = 'withCachedChildNavigation(' + (Comp.displayName || Comp.name) + ')', _temp2;
+}
+}, 512, null, "react-navigation/src/withCachedChildNavigation.js");
 __d(/* react-navigation/src/views/TabView/TabBarTop.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -58102,7 +58331,7 @@ var _react2 = babelHelpers.interopRequireDefault(_react);
 
 var _reactNative = require(46            ); // 46 = react-native
 
-var _reactNativeTabView = require(499                    ); // 499 = react-native-tab-view
+var _reactNativeTabView = require(751                    ); // 751 = react-native-tab-view
 
 var _TabBarIcon = require(510           ); // 510 = ./TabBarIcon
 
@@ -58149,7 +58378,8 @@ var TabBarTop = function (_PureComponent) {
         outputRange: outputRange
       });
 
-      var label = _this.props.getLabel(scene);
+      var tintColor = scene.focused ? activeTintColor : inactiveTintColor;
+      var label = _this.props.getLabel(babelHelpers.extends({}, scene, { tintColor: tintColor }));
       if (typeof label === 'string') {
         return _react2.default.createElement(
           _reactNative.Animated.Text,
@@ -58158,7 +58388,7 @@ var TabBarTop = function (_PureComponent) {
         );
       }
       if (typeof label === 'function') {
-        return label(scene);
+        return label(babelHelpers.extends({}, scene, { tintColor: tintColor }));
       }
 
       return label;
@@ -58370,7 +58600,8 @@ var TabBarBottom = function (_PureComponent) {
         outputRange: outputRange
       });
 
-      var label = _this.props.getLabel(scene);
+      var tintColor = scene.focused ? activeTintColor : inactiveTintColor;
+      var label = _this.props.getLabel(babelHelpers.extends({}, scene, { tintColor: tintColor }));
       if (typeof label === 'string') {
         return _react2.default.createElement(
           _reactNative.Animated.Text,
@@ -58378,8 +58609,9 @@ var TabBarBottom = function (_PureComponent) {
           label
         );
       }
+
       if (typeof label === 'function') {
-        return label(scene);
+        return label(babelHelpers.extends({}, scene, { tintColor: tintColor }));
       }
 
       return label;
@@ -58425,7 +58657,7 @@ var TabBarBottom = function (_PureComponent) {
         return i;
       })));
       return _react2.default.createElement(
-        _reactNative.View,
+        _reactNative.Animated.View,
         { style: [styles.tabBar, style] },
         routes.map(function (route, index) {
           var focused = index === navigation.state.index;
@@ -58440,12 +58672,17 @@ var TabBarBottom = function (_PureComponent) {
           var justifyContent = _this2.props.showIcon ? 'flex-end' : 'center';
           return _react2.default.createElement(
             _reactNative.TouchableWithoutFeedback,
-            { key: route.key, onPress: function onPress() {
+            {
+              key: route.key,
+              onPress: function onPress() {
                 return jumpToIndex(index);
-              } },
+              }
+            },
             _react2.default.createElement(
               _reactNative.Animated.View,
-              { style: [styles.tab, { backgroundColor: backgroundColor, justifyContent: justifyContent }] },
+              {
+                style: [styles.tab, { backgroundColor: backgroundColor, justifyContent: justifyContent }]
+              },
               _this2._renderIcon(scene),
               _this2._renderLabel(scene)
             )
@@ -58491,74 +58728,6 @@ var styles = _reactNative.StyleSheet.create({
   }
 });
 }, 511, null, "react-navigation/src/views/TabView/TabBarBottom.js");
-__d(/* react-navigation/src/withCachedChildNavigation.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = withCachedChildNavigation;
-
-var _react = require(13     ); // 13 = react
-
-var _react2 = babelHelpers.interopRequireDefault(_react);
-
-var _addNavigationHelpers = require(466                     ); // 466 = ./addNavigationHelpers
-
-var _addNavigationHelpers2 = babelHelpers.interopRequireDefault(_addNavigationHelpers);
-
-function withCachedChildNavigation(Comp) {
-  var _class, _temp2;
-
-  return _temp2 = _class = function (_PureComponent) {
-    babelHelpers.inherits(_class, _PureComponent);
-
-    function _class() {
-      var _ref;
-
-      var _temp, _this, _ret;
-
-      babelHelpers.classCallCheck(this, _class);
-
-      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
-
-      return _ret = (_temp = (_this = babelHelpers.possibleConstructorReturn(this, (_ref = _class.__proto__ || Object.getPrototypeOf(_class)).call.apply(_ref, [this].concat(args))), _this), _this._updateNavigationProps = function (navigation) {
-        if (!_this._childNavigationProps) {
-          _this._childNavigationProps = {};
-        }
-        navigation.state.routes.forEach(function (route) {
-          var childNavigation = _this._childNavigationProps[route.key];
-          if (childNavigation && childNavigation.state === route) {
-            return;
-          }
-          _this._childNavigationProps[route.key] = (0, _addNavigationHelpers2.default)(babelHelpers.extends({}, navigation, {
-            state: route
-          }));
-        });
-      }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
-    }
-
-    babelHelpers.createClass(_class, [{
-      key: 'componentWillMount',
-      value: function componentWillMount() {
-        this._updateNavigationProps(this.props.navigation);
-      }
-    }, {
-      key: 'componentWillReceiveProps',
-      value: function componentWillReceiveProps(nextProps) {
-        this._updateNavigationProps(nextProps.navigation);
-      }
-    }, {
-      key: 'render',
-      value: function render() {
-        return _react2.default.createElement(Comp, babelHelpers.extends({}, this.props, {
-          childNavigationProps: this._childNavigationProps
-        }));
-      }
-    }]);
-    return _class;
-  }(_react.PureComponent), _class.displayName = 'withCachedChildNavigation(' + (Comp.displayName || Comp.name) + ')', _temp2;
-}
-}, 512, null, "react-navigation/src/withCachedChildNavigation.js");
 __d(/* react-navigation/src/navigators/DrawerNavigator.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -58589,13 +58758,17 @@ var _DrawerView = require(515                         ); // 515 = ../views/Drawe
 
 var _DrawerView2 = babelHelpers.interopRequireDefault(_DrawerView);
 
+var _DrawerNavigatorItems = require(519                                   ); // 519 = ../views/Drawer/DrawerNavigatorItems
+
+var _DrawerNavigatorItems2 = babelHelpers.interopRequireDefault(_DrawerNavigatorItems);
+
 var _NavigatorTypes = require(495               ); // 495 = ./NavigatorTypes
 
 var _NavigatorTypes2 = babelHelpers.interopRequireDefault(_NavigatorTypes);
 
 var DefaultDrawerConfig = {
   drawerWidth: _reactNative.Dimensions.get('window').width - (_reactNative.Platform.OS === 'android' ? 56 : 64),
-  contentComponent: _DrawerView2.default.Items,
+  contentComponent: _DrawerNavigatorItems2.default,
   drawerPosition: 'left'
 };
 
@@ -58610,6 +58783,7 @@ var DrawerNavigator = function DrawerNavigator(routeConfigs, config) {
 
 
   var contentRouter = (0, _TabRouter2.default)(routeConfigs, tabsConfig);
+
   var drawerRouter = (0, _TabRouter2.default)({
     DrawerClose: {
       screen: (0, _createNavigator2.default)(contentRouter, routeConfigs, config, _NavigatorTypes2.default.DRAWER)(function (props) {
@@ -58680,8 +58854,7 @@ var DrawerScreen = function (_PureComponent) {
       return _react2.default.createElement(_SceneView2.default, {
         screenProps: screenProps,
         component: Content,
-        navigation: childNavigation,
-        navigationOptions: router.getScreenOptions(childNavigation, screenProps)
+        navigation: childNavigation
       });
     }
   }]);
@@ -58698,17 +58871,13 @@ var _react = require(13     ); // 13 = react
 
 var _react2 = babelHelpers.interopRequireDefault(_react);
 
-var _reactNativeDrawerLayoutPolyfill = require(516                                  ); // 516 = react-native-drawer-layout-polyfill
+var _reactNativeDrawerLayoutPolyfill = require(760                                  ); // 760 = react-native-drawer-layout-polyfill
 
 var _reactNativeDrawerLayoutPolyfill2 = babelHelpers.interopRequireDefault(_reactNativeDrawerLayoutPolyfill);
 
 var _addNavigationHelpers = require(466                         ); // 466 = ../../addNavigationHelpers
 
 var _addNavigationHelpers2 = babelHelpers.interopRequireDefault(_addNavigationHelpers);
-
-var _DrawerNavigatorItems = require(519                     ); // 519 = ./DrawerNavigatorItems
-
-var _DrawerNavigatorItems2 = babelHelpers.interopRequireDefault(_DrawerNavigatorItems);
 
 var _DrawerSidebar = require(520              ); // 520 = ./DrawerSidebar
 
@@ -58804,7 +58973,7 @@ var DrawerView = function (_PureComponent) {
         _reactNativeDrawerLayoutPolyfill2.default,
         {
           ref: function ref(c) {
-            return _this2._drawer = c;
+            _this2._drawer = c;
           },
           drawerWidth: this.props.drawerWidth,
           onDrawerOpen: this._handleDrawerOpen,
@@ -58822,13 +58991,12 @@ var DrawerView = function (_PureComponent) {
   return DrawerView;
 }(_react.PureComponent);
 
-DrawerView.Items = _DrawerNavigatorItems2.default;
 exports.default = DrawerView;
 }, 515, null, "react-navigation/src/views/Drawer/DrawerView.js");
-__d(/* react-native-drawer-layout-polyfill/dist/index.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", { value: true });var _reactNativeDrawerLayout = require(517                         );var _reactNativeDrawerLayout2 = _interopRequireDefault(_reactNativeDrawerLayout);function _interopRequireDefault(obj) { // 517 = react-native-drawer-layout
+__d(/* react-native-drawer-layout-polyfill/dist/index.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", { value: true });var _reactNativeDrawerLayout = require(761                         );var _reactNativeDrawerLayout2 = _interopRequireDefault(_reactNativeDrawerLayout);function _interopRequireDefault(obj) { // 761 = react-native-drawer-layout
   return obj && obj.__esModule ? obj : { default: obj };
 }exports.default = _reactNativeDrawerLayout2.default;
-}, 516, null, "react-native-drawer-layout-polyfill/dist/index.js");
+}, 760, null, "react-native-drawer-layout-polyfill/dist/index.js");
 __d(/* react-native-drawer-layout/dist/DrawerLayout.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", { value: true });exports.default = undefined;var _extends = Object.assign || function (target) {
   for (var i = 1; i < arguments.length; i++) {
     var source = arguments[i];for (var key in source) {
@@ -58924,13 +59092,13 @@ var SETTLING = 'Settling';var DrawerLayout = (_temp = _class = function (_Compon
           dy = _ref.dy;
       if (!dx || !dy || Math.abs(dx) < MIN_SWIPE_DISTANCE) {
         return false;
-      }var drawerPosition = _this.props.drawerPosition;
+      }
 
       if (_this._isLockedClosed() || _this._isLockedOpen()) {
         return false;
       }
 
-      if (drawerPosition === 'left') {
+      if (_this.getDrawerPosition() === 'left') {
         var overlayArea = DEVICE_WIDTH - (DEVICE_WIDTH - _this.props.drawerWidth);
 
         if (_this._lastOpenValue === 1) {
@@ -58984,11 +59152,11 @@ var SETTLING = 'Settling';var DrawerLayout = (_temp = _class = function (_Compon
       _this.state.openValue.setValue(openValue);
     };_this._panResponderRelease = function (e, _ref3) {
       var moveX = _ref3.moveX,
-          vx = _ref3.vx;var drawerPosition = _this.props.drawerPosition;
+          vx = _ref3.vx;
       var previouslyOpen = _this._isClosing;
       var isWithinVelocityThreshold = vx < VX_MAX && vx > -VX_MAX;
 
-      if (drawerPosition === 'left') {
+      if (_this.getDrawerPosition() === 'left') {
         if (vx > 0 && moveX > THRESHOLD || vx >= VX_MAX || isWithinVelocityThreshold && previouslyOpen && moveX > THRESHOLD) {
           _this.openDrawer({ velocity: vx });
         } else if (vx < 0 && moveX < THRESHOLD || vx < -VX_MAX || isWithinVelocityThreshold && !previouslyOpen) {
@@ -58998,9 +59166,7 @@ var SETTLING = 'Settling';var DrawerLayout = (_temp = _class = function (_Compon
         } else {
           _this.closeDrawer();
         }
-      }
-
-      if (drawerPosition === 'right') {
+      } else {
         if (vx < 0 && moveX < THRESHOLD || vx <= -VX_MAX || isWithinVelocityThreshold && previouslyOpen && moveX < THRESHOLD) {
           _this.openDrawer({ velocity: -1 * vx });
         } else if (vx > 0 && moveX > THRESHOLD || vx > VX_MAX || isWithinVelocityThreshold && !previouslyOpen) {
@@ -59015,11 +59181,13 @@ var SETTLING = 'Settling';var DrawerLayout = (_temp = _class = function (_Compon
       return _this.props.drawerLockMode === 'locked-closed' && !_this.state.drawerShown;
     };_this._isLockedOpen = function () {
       return _this.props.drawerLockMode === 'locked-open' && _this.state.drawerShown;
-    };_this.state = { openValue: new _reactNative.Animated.Value(0), drawerShown: false };return _this;
-  }_createClass(DrawerLayout, [{ key: 'componentWillMount', value: function componentWillMount() {
+    };_this.state = { accessibilityViewIsModal: false, drawerShown: false, openValue: new _reactNative.Animated.Value(0) };return _this;
+  }_createClass(DrawerLayout, [{ key: 'getDrawerPosition', value: function getDrawerPosition() {
+      var drawerPosition = this.props.drawerPosition;var rtl = _reactNative.I18nManager.isRTL;return rtl ? drawerPosition === 'left' ? 'right' : 'left' : drawerPosition;
+    } }, { key: 'componentWillMount', value: function componentWillMount() {
       var _this2 = this;var openValue = this.state.openValue;openValue.addListener(function (_ref4) {
-        var value = _ref4.value;var drawerShown = value > 0;if (drawerShown !== _this2.state.drawerShown) {
-          _this2.setState({ drawerShown: drawerShown });
+        var value = _ref4.value;var drawerShown = value > 0;var accessibilityViewIsModal = drawerShown;if (drawerShown !== _this2.state.drawerShown) {
+          _this2.setState({ drawerShown: drawerShown, accessibilityViewIsModal: accessibilityViewIsModal });
         }if (_this2.props.keyboardDismissMode === 'on-drag') {
           (0, _reactNativeDismissKeyboard2.default)();
         }_this2._lastOpenValue = value;if (_this2.props.onDrawerSlide) {
@@ -59030,21 +59198,20 @@ var SETTLING = 'Settling';var DrawerLayout = (_temp = _class = function (_Compon
         }, onPanResponderRelease: this._panResponderRelease, onPanResponderTerminate: function onPanResponderTerminate() {} });
     } }, { key: 'render', value: function render() {
       var _state = this.state,
+          accessibilityViewIsModal = _state.accessibilityViewIsModal,
           drawerShown = _state.drawerShown,
           openValue = _state.openValue;var _props = this.props,
           drawerBackgroundColor = _props.drawerBackgroundColor,
-          drawerPosition = _props.drawerPosition,
-          drawerWidth = _props.drawerWidth;var dynamicDrawerStyles = { backgroundColor: drawerBackgroundColor, width: drawerWidth, left: drawerPosition === 'left' ? 0 : null, right: drawerPosition === 'right' ? 0 : null };var outputRange = void 0;if (drawerPosition === 'left') {
+          drawerWidth = _props.drawerWidth,
+          drawerPosition = _props.drawerPosition;var dynamicDrawerStyles = { backgroundColor: drawerBackgroundColor, width: drawerWidth, left: drawerPosition === 'left' ? 0 : null, right: drawerPosition === 'right' ? 0 : null };var outputRange = void 0;if (this.getDrawerPosition() === 'left') {
         outputRange = [-drawerWidth, 0];
       } else {
         outputRange = [drawerWidth, 0];
-      }var drawerTranslateX = openValue.interpolate({ inputRange: [0, 1], outputRange: outputRange, extrapolate: 'clamp' });var animatedDrawerStyles = { transform: [{ translateX: drawerTranslateX }] };var overlayOpacity = openValue.interpolate({ inputRange: [0, 1], outputRange: [0, 0.7], extrapolate: 'clamp' });var animatedOverlayStyles = { opacity: overlayOpacity };var pointerEvents = drawerShown ? 'auto' : 'none';return _react2.default.createElement(_reactNative.View, _extends({ style: { flex: 1, backgroundColor: 'transparent' } }, this._panResponder.panHandlers), _react2.default.createElement(_reactNative.Animated.View, { style: styles.main }, this.props.children), _react2.default.createElement(_reactNative.TouchableWithoutFeedback, { pointerEvents: pointerEvents, onPress: this._onOverlayClick }, _react2.default.createElement(_reactNative.Animated.View, { pointerEvents: pointerEvents, style: [styles.overlay, animatedOverlayStyles] })), _react2.default.createElement(_reactNative.Animated.View, { style: [styles.drawer, dynamicDrawerStyles, animatedDrawerStyles] }, this.props.renderNavigationView()));
+      }var drawerTranslateX = openValue.interpolate({ inputRange: [0, 1], outputRange: outputRange, extrapolate: 'clamp' });var animatedDrawerStyles = { transform: [{ translateX: drawerTranslateX }] };var overlayOpacity = openValue.interpolate({ inputRange: [0, 1], outputRange: [0, 0.7], extrapolate: 'clamp' });var animatedOverlayStyles = { opacity: overlayOpacity };var pointerEvents = drawerShown ? 'auto' : 'none';return _react2.default.createElement(_reactNative.View, _extends({ style: { flex: 1, backgroundColor: 'transparent' } }, this._panResponder.panHandlers), _react2.default.createElement(_reactNative.Animated.View, { style: styles.main }, this.props.children), _react2.default.createElement(_reactNative.TouchableWithoutFeedback, { pointerEvents: pointerEvents, onPress: this._onOverlayClick }, _react2.default.createElement(_reactNative.Animated.View, { pointerEvents: pointerEvents, style: [styles.overlay, animatedOverlayStyles] })), _react2.default.createElement(_reactNative.Animated.View, { accessibilityViewIsModal: accessibilityViewIsModal, style: [styles.drawer, dynamicDrawerStyles, animatedDrawerStyles] }, this.props.renderNavigationView()));
     } }, { key: '_getOpenValueForX', value: function _getOpenValueForX(x) {
-      var _props2 = this.props,
-          drawerPosition = _props2.drawerPosition,
-          drawerWidth = _props2.drawerWidth;
+      var drawerWidth = this.props.drawerWidth;
 
-      if (drawerPosition === 'left') {
+      if (this.getDrawerPosition() === 'left') {
         return x / drawerWidth;
       }
 
@@ -59071,7 +59238,7 @@ var styles = _reactNative.StyleSheet.create({
     bottom: 0,
     right: 0,
     zIndex: 1000 } });
-}, 517, null, "react-native-drawer-layout/dist/DrawerLayout.js");
+}, 761, null, "react-native-drawer-layout/dist/DrawerLayout.js");
 __d(/* react-native-dismiss-keyboard/dist/index.js */function(global, require, module, exports) {Object.defineProperty(exports, '__esModule', {
   value: true
 });
@@ -59087,101 +59254,6 @@ function dismissKeyboard() {
 
 module.exports = exports.default;
 }, 518, null, "react-native-dismiss-keyboard/dist/index.js");
-__d(/* react-navigation/src/views/Drawer/DrawerNavigatorItems.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _react = require(13     ); // 13 = react
-
-var _react2 = babelHelpers.interopRequireDefault(_react);
-
-var _reactNative = require(46            ); // 46 = react-native
-
-var _TouchableItem = require(485               ); // 485 = ../TouchableItem
-
-var _TouchableItem2 = babelHelpers.interopRequireDefault(_TouchableItem);
-
-var DrawerNavigatorItems = function DrawerNavigatorItems(_ref) {
-  var navigation = _ref.navigation,
-      activeTintColor = _ref.activeTintColor,
-      activeBackgroundColor = _ref.activeBackgroundColor,
-      inactiveTintColor = _ref.inactiveTintColor,
-      inactiveBackgroundColor = _ref.inactiveBackgroundColor,
-      getLabel = _ref.getLabel,
-      renderIcon = _ref.renderIcon,
-      style = _ref.style,
-      labelStyle = _ref.labelStyle;
-  return _react2.default.createElement(
-    _reactNative.View,
-    { style: [styles.container, style] },
-    navigation.state.routes.map(function (route, index) {
-      var focused = navigation.state.index === index;
-      var color = focused ? activeTintColor : inactiveTintColor;
-      var backgroundColor = focused ? activeBackgroundColor : inactiveBackgroundColor;
-      var scene = { route: route, index: index, focused: focused, tintColor: color };
-      var icon = renderIcon(scene);
-      var label = getLabel(scene);
-      return _react2.default.createElement(
-        _TouchableItem2.default,
-        {
-          key: route.key,
-          onPress: function onPress() {
-            navigation.navigate('DrawerClose');
-            navigation.navigate(route.routeName);
-          },
-          delayPressIn: 0
-        },
-        _react2.default.createElement(
-          _reactNative.View,
-          { style: [styles.item, { backgroundColor: backgroundColor }] },
-          icon ? _react2.default.createElement(
-            _reactNative.View,
-            { style: [styles.icon, focused ? null : styles.inactiveIcon] },
-            icon
-          ) : null,
-          typeof label === 'string' ? _react2.default.createElement(
-            _reactNative.Text,
-            { style: [styles.label, { color: color }, labelStyle] },
-            label
-          ) : label
-        )
-      );
-    })
-  );
-};
-
-DrawerNavigatorItems.defaultProps = {
-  activeTintColor: '#2196f3',
-  activeBackgroundColor: 'rgba(0, 0, 0, .04)',
-  inactiveTintColor: 'rgba(0, 0, 0, .87)',
-  inactiveBackgroundColor: 'transparent'
-};
-
-var styles = _reactNative.StyleSheet.create({
-  container: {
-    marginTop: _reactNative.Platform.OS === 'ios' ? 20 : 0,
-    paddingVertical: 4
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  icon: {
-    marginHorizontal: 16,
-    width: 24,
-    alignItems: 'center'
-  },
-  inactiveIcon: {
-    opacity: 0.62
-  },
-  label: {
-    margin: 16,
-    fontWeight: 'bold'
-  }
-});
-
-exports.default = DrawerNavigatorItems;
-}, 519, null, "react-navigation/src/views/Drawer/DrawerNavigatorItems.js");
 __d(/* react-navigation/src/views/Drawer/DrawerSidebar.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -59243,6 +59315,11 @@ var DrawerSidebar = function (_PureComponent) {
         return typeof drawerIcon === 'function' ? drawerIcon({ tintColor: tintColor, focused: focused }) : drawerIcon;
       }
       return null;
+    }, _this._onItemPress = function (_ref4) {
+      var route = _ref4.route;
+
+      _this.props.navigation.navigate('DrawerClose');
+      _this.props.navigation.navigate(route.routeName);
     }, _temp), babelHelpers.possibleConstructorReturn(_this, _ret);
   }
 
@@ -59250,13 +59327,19 @@ var DrawerSidebar = function (_PureComponent) {
     key: 'render',
     value: function render() {
       var ContentComponent = this.props.contentComponent;
+      var state = this.props.navigation.state;
+
       return _react2.default.createElement(
         _reactNative.View,
         { style: [styles.container, this.props.style] },
         _react2.default.createElement(ContentComponent, babelHelpers.extends({}, this.props.contentOptions, {
           navigation: this.props.navigation,
+          items: state.routes,
+          activeItemKey: state.routes[state.index] && state.routes[state.index].key,
+          screenProps: this.props.screenProps,
           getLabel: this._getLabel,
           renderIcon: this._renderIcon,
+          onItemPress: this._onItemPress,
           router: this.props.router
         }))
       );
@@ -59275,6 +59358,107 @@ var styles = _reactNative.StyleSheet.create({
   }
 });
 }, 520, null, "react-navigation/src/views/Drawer/DrawerSidebar.js");
+__d(/* react-navigation/src/views/Drawer/DrawerNavigatorItems.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = require(13     ); // 13 = react
+
+var _react2 = babelHelpers.interopRequireDefault(_react);
+
+var _reactNative = require(46            ); // 46 = react-native
+
+var _TouchableItem = require(485               ); // 485 = ../TouchableItem
+
+var _TouchableItem2 = babelHelpers.interopRequireDefault(_TouchableItem);
+
+var DrawerNavigatorItems = function DrawerNavigatorItems(_ref) {
+  var _ref$navigation = _ref.navigation,
+      state = _ref$navigation.state,
+      navigate = _ref$navigation.navigate,
+      items = _ref.items,
+      activeItemKey = _ref.activeItemKey,
+      activeTintColor = _ref.activeTintColor,
+      activeBackgroundColor = _ref.activeBackgroundColor,
+      inactiveTintColor = _ref.inactiveTintColor,
+      inactiveBackgroundColor = _ref.inactiveBackgroundColor,
+      getLabel = _ref.getLabel,
+      renderIcon = _ref.renderIcon,
+      onItemPress = _ref.onItemPress,
+      style = _ref.style,
+      labelStyle = _ref.labelStyle;
+  return _react2.default.createElement(
+    _reactNative.View,
+    { style: [styles.container, style] },
+    items.map(function (route, index) {
+      var focused = activeItemKey === route.key;
+      var color = focused ? activeTintColor : inactiveTintColor;
+      var backgroundColor = focused ? activeBackgroundColor : inactiveBackgroundColor;
+      var scene = { route: route, index: index, focused: focused, tintColor: color };
+      var icon = renderIcon(scene);
+      var label = getLabel(scene);
+      return _react2.default.createElement(
+        _TouchableItem2.default,
+        {
+          key: route.key,
+          onPress: function onPress() {
+            onItemPress({ route: route, focused: focused });
+          },
+          delayPressIn: 0
+        },
+        _react2.default.createElement(
+          _reactNative.View,
+          { style: [styles.item, { backgroundColor: backgroundColor }] },
+          icon ? _react2.default.createElement(
+            _reactNative.View,
+            {
+              style: [styles.icon, focused ? null : styles.inactiveIcon]
+            },
+            icon
+          ) : null,
+          typeof label === 'string' ? _react2.default.createElement(
+            _reactNative.Text,
+            { style: [styles.label, { color: color }, labelStyle] },
+            label
+          ) : label
+        )
+      );
+    })
+  );
+};
+
+DrawerNavigatorItems.defaultProps = {
+  activeTintColor: '#2196f3',
+  activeBackgroundColor: 'rgba(0, 0, 0, .04)',
+  inactiveTintColor: 'rgba(0, 0, 0, .87)',
+  inactiveBackgroundColor: 'transparent'
+};
+
+var styles = _reactNative.StyleSheet.create({
+  container: {
+    marginTop: _reactNative.Platform.OS === 'ios' ? 20 : 0,
+    paddingVertical: 4
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  icon: {
+    marginHorizontal: 16,
+    width: 24,
+    alignItems: 'center'
+  },
+  inactiveIcon: {
+    opacity: 0.62
+  },
+  label: {
+    margin: 16,
+    fontWeight: 'bold'
+  }
+});
+
+exports.default = DrawerNavigatorItems;
+}, 519, null, "react-navigation/src/views/Drawer/DrawerNavigatorItems.js");
 __d(/* react-navigation/src/views/withNavigation.js */function(global, require, module, exports) {Object.defineProperty(exports, "__esModule", {
   value: true
 });
