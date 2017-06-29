@@ -1,6 +1,6 @@
 export default {
-  hamburger: require('../images/icon-hamburger.png'),
-  home: require('../images/icon-home.png'),
-  recent: require('../images/icon-recent.png'),
-  'arrow-left': require('../images/icon-arrow-left.png'),
+  hamburger: require('./images/hamburger.png'),
+  home: require('./images/home.png'),
+  recent: require('./images/recent.png'),
+  'arrow-left': require('./images/arrow-left.png'),
 };

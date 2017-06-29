@@ -1,6 +1,6 @@
 import React from 'react';
-import { StackNavigator, TabNavigator, View } from 'react-navigation';
-import { Counter, Welcome, Auth, PhotoMap } from './screens';
+import { StackNavigator, TabNavigator, addNavigationHelpers } from 'react-navigation';
+import { Counter, Welcome, Auth, PhotoMap, Yelp } from './screens';
 import { ralph } from './styles';
 
 const stackConfig = {
@@ -45,6 +45,10 @@ const PhotoMapNavigator = StackNavigator({
   PhotoMap: {screen: PhotoMap},
 }, emptyHeader);
 
+const YelpNavigator = StackNavigator({
+  Yelp: {screen: Yelp},
+});
+
 export {
-  AppNavigator, AuthNavigator, PhotoMapNavigator,
+  AppNavigator, AuthNavigator, PhotoMapNavigator, YelpNavigator
 };
